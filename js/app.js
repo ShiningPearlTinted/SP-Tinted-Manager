@@ -1,4 +1,4 @@
-const BRIDGE_URL='https://script.google.com/macros/s/AKfycbyM-pYM2Hvk4_aIfwwgZr_ZJfez_Ipe4Ik8F2H2pMi1fvloEKaKrKg7TQ3677CCTiD-aQ/exec';
+const BRIDGE_URL='https://script.google.com/macros/s/AKfycby5CKM9m24vhAYelEcLhdkyhgAcFxQewpF7os0HNbRubQyGst0f_xvsnYG2K5HtL_syzg/exec';
 const bridge=document.getElementById('bridge');
 let bridgeReady=false;
 let pendingMessage=null;
