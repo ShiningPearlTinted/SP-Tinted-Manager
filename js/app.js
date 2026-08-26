@@ -1,128 +1,203 @@
-const BRIDGE_URL='https://script.google.com/macros/s/AKfycby5CKM9m24vhAYelEcLhdkyhgAcFxQewpF7os0HNbRubQyGst0f_xvsnYG2K5HtL_syzg/exec';
+const WEB_APP_URL =
+  'https://script.google.com/macros/s/AKfycby5CKM9m24vhAYelEcLhdkyhgAcFxQewpF7os0HNbRubQyGst0f_xvsnYG2K5HtL_syzg/exec';
 
-let requestCounter = 0;
+let callbackCounter = 0;
 
-function apiRequest(action, params, onSuccess, onError){
-  const callback='spTintedCallback_'+(++requestCounter);
-  const script=document.createElement('script');
-  const query=new URLSearchParams();
-  query.set('action',action);
-  query.set('callback',callback);
+function callApi(action, params = {}, onSuccess, onError) {
+  const callbackName = 'spTintedApiCallback_' + (++callbackCounter);
+  const script = document.createElement('script');
 
-  Object.keys(params||{}).forEach(k=>{
-    query.set(k, params[k]);
+  const query = new URLSearchParams({
+    action,
+    callback: callbackName,
+    ...params
   });
 
-  let finished=false;
+  let completed = false;
 
-  window[callback]=function(payload){
-    finished=true;
-    cleanup();
-    if(payload && payload.success===false && action==='dashboard'){
-      onError(payload.message || 'Dashboard request failed.');
-      return;
+  function cleanup() {
+    if (script.parentNode) {
+      script.parentNode.removeChild(script);
     }
-    onSuccess(payload);
-  };
-
-  function cleanup(){
-    try{ delete window[callback]; }catch(e){ window[callback]=undefined; }
-    if(script.parentNode) script.parentNode.removeChild(script);
+    try {
+      delete window[callbackName];
+    } catch (e) {
+      window[callbackName] = undefined;
+    }
   }
 
-  script.onerror=function(){
-    if(finished)return;
-    finished=true;
+  window[callbackName] = function (result) {
+    if (completed) return;
+    completed = true;
     cleanup();
-    onError('Unable to connect to SP Tinted Manager Web App.');
+
+    if (typeof onSuccess === 'function') {
+      onSuccess(result);
+    }
   };
 
-  script.src=BRIDGE_URL+'?'+query.toString();
+  script.onerror = function () {
+    if (completed) return;
+    completed = true;
+    cleanup();
+
+    if (typeof onError === 'function') {
+      onError('Unable to connect to SP Tinted Manager Web App.');
+    }
+  };
+
+  script.src = WEB_APP_URL + '?' + query.toString();
+  script.async = true;
   document.head.appendChild(script);
 }
 
-document.getElementById('loginForm').onsubmit=e=>{
-  e.preventDefault();
-  const button=document.getElementById('login');
-  const error=document.getElementById('error');
+function setLoginError(message) {
+  const error = document.getElementById('error');
+  if (error) error.textContent = message || '';
+}
 
-  error.textContent='';
-  button.disabled=true;
+document.getElementById('loginForm').addEventListener('submit', function (event) {
+  event.preventDefault();
 
-  apiRequest(
+  const username = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const button = document.getElementById('login');
+
+  setLoginError('');
+
+  if (!username || !password) {
+    setLoginError('Please enter username and password.');
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = 'Signing In...';
+
+  callApi(
     'login',
     {
-      username:document.getElementById('email').value,
-      password:document.getElementById('password').value
+      username: username,
+      password: password
     },
-    result=>{
-      button.disabled=false;
+    function (result) {
+      button.disabled = false;
+      button.textContent = 'Sign In';
 
-      if(!result || !result.success){
-        error.textContent=(result && result.message)||'Invalid username or password.';
+      if (!result || result.success !== true) {
+        setLoginError(
+          result && result.message
+            ? result.message
+            : 'Invalid username or password.'
+        );
         return;
       }
+
+      const user = result.user || {};
 
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('app').classList.remove('hidden');
 
-      const user=result.user||{};
-      document.getElementById('pname').textContent=user.name||'Admin';
-      document.getElementById('prole').textContent=user.role||'Admin';
-      document.getElementById('avatar').textContent=(user.name||'A').charAt(0).toUpperCase();
+      document.getElementById('pname').textContent =
+        user.name || 'Admin';
+
+      document.getElementById('prole').textContent =
+        user.role || 'Admin';
+
+      document.getElementById('avatar').textContent =
+        (user.name || 'A').charAt(0).toUpperCase();
 
       loadDashboard();
     },
-    message=>{
-      button.disabled=false;
-      error.textContent=message||'Unable to connect to SP Tinted Manager Web App.';
+    function (message) {
+      button.disabled = false;
+      button.textContent = 'Sign In';
+      setLoginError(message);
     }
   );
-};
+});
 
-document.getElementById('toggle').onclick=()=>{
-  const p=document.getElementById('password');
-  p.type=p.type==='password'?'text':'password';
-  document.getElementById('toggle').textContent=p.type==='password'?'Show':'Hide';
-};
+document.getElementById('toggle').addEventListener('click', function () {
+  const password = document.getElementById('password');
 
-document.getElementById('refresh').onclick=loadDashboard;
+  if (password.type === 'password') {
+    password.type = 'text';
+    this.textContent = 'Hide';
+  } else {
+    password.type = 'password';
+    this.textContent = 'Show';
+  }
+});
 
-function loadDashboard(){
-  document.getElementById('loading').classList.remove('hidden');
+document.getElementById('refresh').addEventListener('click', loadDashboard);
 
-  apiRequest(
+function loadDashboard() {
+  const loading = document.getElementById('loading');
+  loading.classList.remove('hidden');
+
+  callApi(
     'dashboard',
     {},
-    data=>{
-      document.getElementById('loading').classList.add('hidden');
-      render(data);
+    function (result) {
+      loading.classList.add('hidden');
+
+      if (!result || result.success === false) {
+        console.error(
+          result && result.message
+            ? result.message
+            : 'Dashboard request failed.'
+        );
+        return;
+      }
+
+      renderDashboard(result);
     },
-    message=>{
-      document.getElementById('loading').classList.add('hidden');
+    function (message) {
+      loading.classList.add('hidden');
       console.error(message);
     }
   );
 }
 
-function render(d){
-  document.getElementById('totalCustomers').textContent=d.totalCustomers||0;
-  document.getElementById('todayRegistration').textContent=d.todayRegistration||0;
-  document.getElementById('totalVehicles').textContent=d.totalVehicles||0;
-  document.getElementById('monthlyRegistration').textContent=d.monthlyRegistration||0;
+function renderDashboard(data) {
+  document.getElementById('totalCustomers').textContent =
+    data.totalCustomers ?? 0;
 
-  document.getElementById('recent').innerHTML=
-    (d.recentCustomers||[]).map(r=>
-      `<tr><td>${esc(r.id)}</td><td>${esc(r.name)}</td><td>${esc(r.vehicle)}</td><td>${esc(r.phone)}</td><td>${esc(r.date)}</td></tr>`
-    ).join('') ||
-    '<tr><td colspan="5" style="text-align:center">No customer records found.</td></tr>';
+  document.getElementById('todayRegistration').textContent =
+    data.todayRegistration ?? 0;
+
+  document.getElementById('totalVehicles').textContent =
+    data.totalVehicles ?? 0;
+
+  document.getElementById('monthlyRegistration').textContent =
+    data.monthlyRegistration ?? 0;
+
+  const tbody = document.getElementById('recent');
+  const rows = data.recentCustomers || [];
+
+  if (!rows.length) {
+    tbody.innerHTML =
+      '<tr><td colspan="5">No customer records found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(function (row) {
+    return (
+      '<tr>' +
+        '<td>' + escapeHtml(row.id) + '</td>' +
+        '<td>' + escapeHtml(row.name) + '</td>' +
+        '<td>' + escapeHtml(row.vehicle) + '</td>' +
+        '<td>' + escapeHtml(row.phone) + '</td>' +
+        '<td>' + escapeHtml(row.date) + '</td>' +
+      '</tr>'
+    );
+  }).join('');
 }
 
-function esc(v){
-  return String(v??'')
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#039;');
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
