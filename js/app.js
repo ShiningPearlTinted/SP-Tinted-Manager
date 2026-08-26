@@ -1,75 +1,87 @@
 const BRIDGE_URL='https://script.google.com/macros/s/AKfycby5CKM9m24vhAYelEcLhdkyhgAcFxQewpF7os0HNbRubQyGst0f_xvsnYG2K5HtL_syzg/exec';
-const bridge=document.getElementById('bridge');
-let bridgeReady=false;
-let pendingMessage=null;
 
-function sendToBridge(message){
-  if(bridgeReady && bridge.contentWindow){
-    bridge.contentWindow.postMessage(message,'*');
-  }else{
-    pendingMessage=message;
-  }
-}
+let requestCounter = 0;
 
-addEventListener('message',e=>{
-  const m=e.data||{};
-  if(m.source!=='SP_TINTED_BRIDGE')return;
+function apiRequest(action, params, onSuccess, onError){
+  const callback='spTintedCallback_'+(++requestCounter);
+  const script=document.createElement('script');
+  const query=new URLSearchParams();
+  query.set('action',action);
+  query.set('callback',callback);
 
-  if(m.type==='READY'){
-    bridgeReady=true;
-    if(pendingMessage){
-      const message=pendingMessage;
-      pendingMessage=null;
-      sendToBridge(message);
-    }
-    return;
-  }
+  Object.keys(params||{}).forEach(k=>{
+    query.set(k, params[k]);
+  });
 
-  if(m.type==='LOGIN_RESULT'){
-    document.getElementById('login').disabled=false;
+  let finished=false;
 
-    if(!m.payload.success){
-      document.getElementById('error').textContent=m.payload.message;
+  window[callback]=function(payload){
+    finished=true;
+    cleanup();
+    if(payload && payload.success===false && action==='dashboard'){
+      onError(payload.message || 'Dashboard request failed.');
       return;
     }
+    onSuccess(payload);
+  };
 
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    document.getElementById('pname').textContent=m.payload.user.name;
-    document.getElementById('prole').textContent=m.payload.user.role;
-    document.getElementById('avatar').textContent=m.payload.user.name.charAt(0).toUpperCase();
-    loadDashboard();
+  function cleanup(){
+    try{ delete window[callback]; }catch(e){ window[callback]=undefined; }
+    if(script.parentNode) script.parentNode.removeChild(script);
   }
 
-  if(m.type==='DASHBOARD_RESULT'){
-    document.getElementById('loading').classList.add('hidden');
-    render(m.payload);
-  }
+  script.onerror=function(){
+    if(finished)return;
+    finished=true;
+    cleanup();
+    onError('Unable to connect to SP Tinted Manager Web App.');
+  };
 
-  if(m.type==='ERROR'){
-    document.getElementById('loading').classList.add('hidden');
-    document.getElementById('login').disabled=false;
-    document.getElementById('error').textContent=m.payload.message;
-  }
-});
-
-bridge.src=BRIDGE_URL;
+  script.src=BRIDGE_URL+'?'+query.toString();
+  document.head.appendChild(script);
+}
 
 document.getElementById('loginForm').onsubmit=e=>{
   e.preventDefault();
-  document.getElementById('error').textContent='';
-  document.getElementById('login').disabled=true;
+  const button=document.getElementById('login');
+  const error=document.getElementById('error');
 
-  sendToBridge({
-    source:'SP_TINTED_APP',
-    type:'LOGIN',
-    email:document.getElementById('email').value,
-    password:document.getElementById('password').value
-  });
+  error.textContent='';
+  button.disabled=true;
+
+  apiRequest(
+    'login',
+    {
+      username:document.getElementById('email').value,
+      password:document.getElementById('password').value
+    },
+    result=>{
+      button.disabled=false;
+
+      if(!result || !result.success){
+        error.textContent=(result && result.message)||'Invalid username or password.';
+        return;
+      }
+
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+
+      const user=result.user||{};
+      document.getElementById('pname').textContent=user.name||'Admin';
+      document.getElementById('prole').textContent=user.role||'Admin';
+      document.getElementById('avatar').textContent=(user.name||'A').charAt(0).toUpperCase();
+
+      loadDashboard();
+    },
+    message=>{
+      button.disabled=false;
+      error.textContent=message||'Unable to connect to SP Tinted Manager Web App.';
+    }
+  );
 };
 
 document.getElementById('toggle').onclick=()=>{
-  let p=document.getElementById('password');
+  const p=document.getElementById('password');
   p.type=p.type==='password'?'text':'password';
   document.getElementById('toggle').textContent=p.type==='password'?'Show':'Hide';
 };
@@ -78,10 +90,19 @@ document.getElementById('refresh').onclick=loadDashboard;
 
 function loadDashboard(){
   document.getElementById('loading').classList.remove('hidden');
-  sendToBridge({
-    source:'SP_TINTED_APP',
-    type:'DASHBOARD'
-  });
+
+  apiRequest(
+    'dashboard',
+    {},
+    data=>{
+      document.getElementById('loading').classList.add('hidden');
+      render(data);
+    },
+    message=>{
+      document.getElementById('loading').classList.add('hidden');
+      console.error(message);
+    }
+  );
 }
 
 function render(d){
