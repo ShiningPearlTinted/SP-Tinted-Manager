@@ -1,9 +1,127 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SP Tinted Manager</title><link rel="stylesheet" href="css/style.css"></head><body>
-<div id="loginScreen" class="login-screen"><div class="login-card"><div class="brand"><div class="logo">SP</div><div><b><i>SP</i> Tinted</b><small>Management System</small></div></div><h1>Welcome Back</h1><p>Sign in to continue to your dashboard.</p><form id="loginForm"><label>Email</label><input id="email" type="email" placeholder="Enter your email" required><label>Password</label><div class="pw"><input id="password" type="password" placeholder="Enter your password" required><button type="button" id="toggle">Show</button></div><div id="error" class="error"></div><button id="login" class="primary">Sign In</button></form><footer>© 2026 Shining Pearl Tinted</footer></div></div>
-<div id="app" class="app hidden"><aside class="sidebar"><div class="sidebrand"><span>SP</span> Tinted</div><nav><div class="nav active">▦ <span>Dashboard</span></div><div class="nav">♟ <span>Customer</span></div><div class="nav">▣ <span>Invoice</span></div><div class="nav">♙ <span>User Management</span></div><div class="nav">⚙ <span>Settings</span></div></nav><div class="sidefoot">SP Tinted Management</div></aside><main><header><h2>Dashboard</h2><div class="headright"><button id="refresh">↻</button><button>♟</button><div id="avatar">A</div><div><b id="pname">Admin</b><small id="prole">Admin</small></div></div></header><section class="content"><div class="stats">
-<div class="card"><div class="icon">♧</div><span>Total Customers</span><strong id="totalCustomers">0</strong></div>
-<div class="card"><div class="icon">♧</div><span>Today's Registration</span><strong id="todayRegistration">0</strong></div>
-<div class="card"><div class="icon">▱</div><span>Total Vehicles</span><strong id="totalVehicles">0</strong></div>
-<div class="card"><div class="icon">▣</div><span>Monthly Registration</span><strong id="monthlyRegistration">0</strong></div></div>
-<div class="recent card"><h3>Recent Customers</h3><div class="tablewrap"><table><thead><tr><th>ID</th><th>Name</th><th>Vehicle</th><th>Phone</th><th>Date</th></tr></thead><tbody id="recent"><tr><td colspan="5">Loading...</td></tr></tbody></table></div></div></section></main></div>
-<div id="loading" class="loading hidden"><div class="loader"></div><span>Loading Dashboard...</span></div><iframe id="bridge"></iframe><script src="js/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SP Tinted Manager</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+
+    <div class="brand">
+      <div class="logo">SP</div>
+      <div>
+        <b><i>SP</i> Tinted</b>
+        <small>Management System</small>
+      </div>
+    </div>
+
+    <h1>Welcome Back</h1>
+
+    <form id="loginForm">
+      <label>Username</label>
+      <input id="email" type="text" autocomplete="username"
+             placeholder="Enter your username" required>
+
+      <label>Password</label>
+      <div class="pw">
+        <input id="password" type="password" autocomplete="current-password"
+               placeholder="Enter your password" required>
+        <button type="button" id="toggle">Show</button>
+      </div>
+
+      <div id="error" class="error"></div>
+
+      <button id="login" class="primary">Sign In</button>
+    </form>
+
+    <footer>© 2026 Shining Pearl Tinted</footer>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+  <aside class="sidebar">
+    <div class="sidebrand"><span>SP</span> Tinted</div>
+    <nav>
+      <div class="nav active">▦ <span>Dashboard</span></div>
+      <div class="nav">♟ <span>Customer</span></div>
+      <div class="nav">▣ <span>Invoice</span></div>
+      <div class="nav">♙ <span>User Management</span></div>
+      <div class="nav">⚙ <span>Settings</span></div>
+    </nav>
+    <div class="sidefoot">SP Tinted Management</div>
+  </aside>
+
+  <main>
+    <header>
+      <h2>Dashboard</h2>
+      <div class="headright">
+        <button id="refresh">↻</button>
+        <button>♟</button>
+        <div id="avatar">A</div>
+        <div>
+          <b id="pname">Admin</b>
+          <small id="prole">Admin</small>
+        </div>
+      </div>
+    </header>
+
+    <section class="content">
+      <div class="stats">
+        <div class="card">
+          <div class="icon">♧</div>
+          <span>Total Customers</span>
+          <strong id="totalCustomers">0</strong>
+        </div>
+        <div class="card">
+          <div class="icon">♧</div>
+          <span>Today's Registration</span>
+          <strong id="todayRegistration">0</strong>
+        </div>
+        <div class="card">
+          <div class="icon">▱</div>
+          <span>Total Vehicles</span>
+          <strong id="totalVehicles">0</strong>
+        </div>
+        <div class="card">
+          <div class="icon">▣</div>
+          <span>Monthly Registration</span>
+          <strong id="monthlyRegistration">0</strong>
+        </div>
+      </div>
+
+      <div class="recent card">
+        <h3>Recent Customers</h3>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Vehicle</th>
+                <th>Phone</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="recent">
+              <tr><td colspan="5">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="loading" class="loading hidden">
+  <div class="loader"></div>
+  <span>Loading Dashboard...</span>
+</div>
+
+<iframe id="bridge"></iframe>
+<script src="js/app.js"></script>
+</body>
+</html>
