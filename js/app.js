@@ -1,75 +1,150 @@
 const WEB_APP_URL =
   'https://script.google.com/macros/s/AKfycby5CKM9m24vhAYelEcLhdkyhgAcFxQewpF7os0HNbRubQyGst0f_xvsnYG2K5HtL_syzg/exec';
 
-let jsonpCounter = 0;
+let bridgeReady = false;
+let bridgeQueue = [];
+let bridgeRequestId = 0;
+let bridgeTimer = null;
 
 function setLoginError(message) {
   const error = document.getElementById('error');
   if (error) error.textContent = message || '';
 }
 
-/* Apps Script Web App connection using JSONP. */
-function callWebApp(action, params, success, failure) {
-  const callbackName =
-    'spTintedCallback_' + Date.now() + '_' + (++jsonpCounter);
+function getBridge() {
+  return document.getElementById('bridge');
+}
 
-  const script = document.createElement('script');
-  let finished = false;
-  let timeout;
+/*
+ * LOCKED connection method:
+ * GitHub Pages -> Apps Script Bridge iframe -> google.script.run
+ *
+ * This avoids the JSONP redirect problem seen with the Apps Script /exec URL.
+ */
+function initBridge() {
+  const bridge = getBridge();
+  if (!bridge) {
+    console.error('SP Tinted Bridge iframe not found.');
+    return;
+  }
 
-  const query = new URLSearchParams();
-  query.set('action', action);
-  query.set('callback', callbackName);
-  query.set('_', String(Date.now()));
+  bridge.src = WEB_APP_URL;
 
-  Object.keys(params || {}).forEach(function (key) {
-    query.set(key, params[key] == null ? '' : String(params[key]));
+  window.addEventListener('message', function (event) {
+    const message = event.data || {};
+
+    if (message.source !== 'SP_TINTED_BRIDGE') return;
+
+    if (message.type === 'READY') {
+      bridgeReady = true;
+      flushBridgeQueue();
+      return;
+    }
+
+    if (message.type === 'LOGIN_RESULT') {
+      finishBridgeRequest(message.payload);
+      return;
+    }
+
+    if (message.type === 'DASHBOARD_RESULT') {
+      finishBridgeRequest(message.payload);
+      return;
+    }
+
+    if (message.type === 'ERROR') {
+      failBridgeRequest(
+        message.payload && message.payload.message
+          ? message.payload.message
+          : 'SP Tinted Manager Web App request failed.'
+      );
+    }
   });
 
-  function cleanup() {
-    if (timeout) clearTimeout(timeout);
-    if (script.parentNode) script.parentNode.removeChild(script);
+  bridge.addEventListener('load', function () {
+    // Bridge.html sends READY itself. This fallback only retries queued work.
+    if (bridgeReady) flushBridgeQueue();
+  });
+}
 
-    try {
-      delete window[callbackName];
-    } catch (e) {
-      window[callbackName] = undefined;
+function callWebApp(action, params, success, failure) {
+  bridgeQueue.push({
+    id: ++bridgeRequestId,
+    action: action,
+    params: params || {},
+    success: success,
+    failure: failure
+  });
+
+  flushBridgeQueue();
+}
+
+function flushBridgeQueue() {
+  if (!bridgeReady || !bridgeQueue.length) return;
+
+  const request = bridgeQueue.shift();
+  const bridge = getBridge();
+
+  if (!bridge || !bridge.contentWindow) {
+    if (typeof request.failure === 'function') {
+      request.failure('Unable to connect to SP Tinted Manager Web App.');
     }
+    return;
   }
 
-  function fail(message) {
-    if (finished) return;
+  window.__spTintedActiveRequest = request;
 
-    finished = true;
-    cleanup();
+  clearTimeout(bridgeTimer);
+  bridgeTimer = setTimeout(function () {
+    if (window.__spTintedActiveRequest === request) {
+      window.__spTintedActiveRequest = null;
 
-    if (typeof failure === 'function') {
-      failure(message);
+      if (typeof request.failure === 'function') {
+        request.failure('Unable to connect to SP Tinted Manager Web App.');
+      }
+
+      flushBridgeQueue();
     }
-  }
-
-  window[callbackName] = function (result) {
-    if (finished) return;
-
-    finished = true;
-    cleanup();
-
-    if (typeof success === 'function') {
-      success(result);
-    }
-  };
-
-  script.onerror = function () {
-    fail('Unable to connect to SP Tinted Manager Web App.');
-  };
-
-  timeout = setTimeout(function () {
-    fail('Unable to connect to SP Tinted Manager Web App.');
   }, 15000);
 
-  script.src = WEB_APP_URL + '?' + query.toString();
-  script.async = true;
-  document.head.appendChild(script);
+  bridge.contentWindow.postMessage(
+    {
+      source: 'SP_TINTED_APP',
+      type: request.action === 'login' ? 'LOGIN' : 'DASHBOARD',
+      username: request.params.username || '',
+      password: request.params.password || ''
+    },
+    '*'
+  );
+}
+
+function finishBridgeRequest(result) {
+  const request = window.__spTintedActiveRequest;
+
+  if (!request) return;
+
+  window.__spTintedActiveRequest = null;
+  clearTimeout(bridgeTimer);
+
+  if (typeof request.success === 'function') {
+    request.success(result);
+  }
+
+  setTimeout(flushBridgeQueue, 0);
+}
+
+function failBridgeRequest(message) {
+  const request = window.__spTintedActiveRequest;
+
+  if (!request) return;
+
+  window.__spTintedActiveRequest = null;
+  clearTimeout(bridgeTimer);
+
+  if (typeof request.failure === 'function') {
+    request.failure(message);
+  }
+
+  setTimeout(flushBridgeQueue, 0);
 }
 
 document.getElementById('loginForm').addEventListener('submit', function (event) {
@@ -244,3 +319,5 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+initBridge();
