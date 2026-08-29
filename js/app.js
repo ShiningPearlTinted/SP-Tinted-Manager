@@ -19,17 +19,21 @@ function getBridge() {
  * LOCKED connection method:
  * GitHub Pages -> Apps Script Bridge iframe -> google.script.run
  *
- * This avoids the JSONP redirect problem seen with the Apps Script /exec URL.
+ * FIX ONLY:
+ * Register the message listener BEFORE assigning bridge.src.
+ * This prevents missing the Bridge READY message when Apps Script
+ * loads quickly, which previously caused Sign In to stay on
+ * "Signing In..." indefinitely.
  */
 function initBridge() {
   const bridge = getBridge();
+
   if (!bridge) {
     console.error('SP Tinted Bridge iframe not found.');
     return;
   }
 
-  bridge.src = WEB_APP_URL;
-
+  // IMPORTANT: listener must exist before bridge.src is assigned.
   window.addEventListener('message', function (event) {
     const message = event.data || {};
 
@@ -61,9 +65,13 @@ function initBridge() {
   });
 
   bridge.addEventListener('load', function () {
-    // Bridge.html sends READY itself. This fallback only retries queued work.
+    // Bridge.html sends READY itself.
+    // This fallback only retries queued work if READY has already arrived.
     if (bridgeReady) flushBridgeQueue();
   });
+
+  // Set src LAST so READY cannot be missed.
+  bridge.src = WEB_APP_URL;
 }
 
 function callWebApp(action, params, success, failure) {
