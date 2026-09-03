@@ -1,334 +1,319 @@
-const WEB_APP_URL =
-  "https://script.google.com/macros/s/AKfycby5CKM9m24vhAYelEcLhdkyhgAcFxQewpF7os0HNbRubQyGst0f_xvsnYG2K5HtL_syzg/exec";
+(() => {
+  "use strict";
 
-const bridge = document.getElementById("bridge");
+  // =========================================================
+  // ONE BACKEND URL
+  // =========================================================
+  const WEB_APP_URL =
+    "https://script.google.com/macros/s/AKfycby5CKM9m24vhAYelEcLhdkyhgAcFxQewpF7os0HNbRubQyGst0f_xvsnYG2K5HtL_syzg/exec";
 
-let bridgeReady = false;
+  const bridge = document.getElementById("bridge");
+  const loginForm = document.getElementById("loginForm");
+  const usernameInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const toggleButton = document.getElementById("toggle");
+  const errorBox = document.getElementById("error");
+  const loginButton = document.getElementById("login");
+  const loading = document.getElementById("loading");
 
+  let bridgeReady = false;
+  let loginBusy = false;
 
-// ======================================================
-// SHOW STATUS
-// ======================================================
-
-function setConnectionStatus(message, isError = false) {
-
-  const status =
-    document.getElementById("connectionStatus");
-
-  if (!status) return;
-
-  status.textContent = message;
-
-  status.style.color =
-    isError ? "#ff4d5a" : "#7f9bc0";
-}
-
-
-// ======================================================
-// RECEIVE MESSAGE FROM APPS SCRIPT BRIDGE
-// ======================================================
-
-window.addEventListener("message", function (event) {
-
-  const message = event.data || {};
-
-  // IMPORTANT:
-  // Do NOT check event.source here.
-  // Apps Script HtmlService uses a sandboxed iframe.
-
-  if (message.source !== "SP_TINTED_BRIDGE") {
-    return;
+  // ---------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------
+  function setError(message) {
+    if (errorBox) errorBox.textContent = message || "";
   }
 
-
-  // ====================================================
-  // BRIDGE READY
-  // ====================================================
-
-  if (message.type === "READY") {
-
-    bridgeReady = true;
-
-    setConnectionStatus("");
-
-    console.log(
-      "SP Tinted Manager Web App connected."
-    );
-
-    return;
+  function showLoading(show, text) {
+    if (!loading) return;
+    loading.classList.toggle("hidden", !show);
+    const span = loading.querySelector("span");
+    if (span && text) span.textContent = text;
   }
 
-
-  // ====================================================
-  // LOGIN RESULT
-  // ====================================================
-
-  if (message.type === "LOGIN_RESULT") {
-
-    const payload = message.payload || {};
-    const result = payload.result || {};
-
-    console.log(
-      "Login response:",
-      result
-    );
-
-    handleLoginResult(result);
-
-    return;
+  function setLoginBusy(busy) {
+    loginBusy = busy;
+    if (loginButton) {
+      loginButton.disabled = busy;
+      loginButton.textContent = busy ? "Signing In..." : "Sign In";
+    }
   }
 
+  function postToBridge(type, payload) {
+    if (!bridge || !bridge.contentWindow) {
+      throw new Error("Apps Script bridge is unavailable.");
+    }
 
-  // ====================================================
-  // DASHBOARD RESULT
-  // ====================================================
-
-  if (message.type === "DASHBOARD_RESULT") {
-
-    const payload = message.payload || {};
-    const result = payload.result || {};
-
-    console.log(
-      "Dashboard response:",
-      result
-    );
-
-    handleDashboardResult(result);
-
-    return;
+    bridge.contentWindow.postMessage({
+      source: "SP_TINTED_APP",
+      type,
+      payload: payload || {}
+    }, "*");
   }
 
+  // ---------------------------------------------------------
+  // IMPORTANT: receive messages without checking event.source.
+  // Apps Script HtmlService uses nested sandboxed frames.
+  // ---------------------------------------------------------
+  window.addEventListener("message", (event) => {
+    const message = event.data || {};
 
-  // ====================================================
-  // ERROR
-  // ====================================================
+    if (message.source !== "SP_TINTED_BRIDGE") return;
 
-  if (message.type === "ERROR") {
+    if (message.type === "READY") {
+      bridgeReady = true;
+      setError("");
+      console.log("[SP] Apps Script bridge READY.");
+      return;
+    }
 
-    const payload = message.payload || {};
+    if (message.type === "LOGIN_RESULT") {
+      const result = (message.payload || {}).result || {};
+      handleLoginResult(result);
+      return;
+    }
 
-    console.error(
-      "Apps Script error:",
-      payload.message
-    );
+    if (message.type === "DASHBOARD_RESULT") {
+      const result = (message.payload || {}).result || {};
+      handleDashboardResult(result);
+      return;
+    }
 
-    setConnectionStatus(
-      payload.message || "Connection error.",
-      true
-    );
-
-  }
-
-});
-
-
-// ======================================================
-// LOAD APPS SCRIPT BRIDGE
-// ======================================================
-
-if (bridge) {
-
-  bridge.src = WEB_APP_URL;
-
-  bridge.addEventListener("load", function () {
-
-    console.log(
-      "Apps Script bridge iframe loaded."
-    );
-
+    if (message.type === "ERROR") {
+      const payload = message.payload || {};
+      setLoginBusy(false);
+      showLoading(false);
+      setError(payload.message || "Apps Script request failed.");
+      console.error("[SP] Apps Script error:", payload.message);
+    }
   });
 
-}
-
-
-// ======================================================
-// WAIT FOR BRIDGE
-// ======================================================
-
-setConnectionStatus(
-  "Connecting to SP Tinted Manager Web App..."
-);
-
-
-// ======================================================
-// LOGIN
-// ======================================================
-
-function login(username, password) {
-
-  if (!bridgeReady) {
-
-    setConnectionStatus(
-      "SP Tinted Manager Web App is not ready.",
-      true
-    );
-
-    console.error(
-      "Login blocked: bridge is not ready."
-    );
-
-    return;
+  // ---------------------------------------------------------
+  // Load bridge only AFTER message listener exists.
+  // ---------------------------------------------------------
+  if (bridge) {
+    bridge.src = WEB_APP_URL;
+    bridge.addEventListener("load", () => {
+      console.log("[SP] Bridge iframe load event.");
+    });
   }
 
+  // ---------------------------------------------------------
+  // Login form
+  // ---------------------------------------------------------
+  if (toggleButton && passwordInput) {
+    toggleButton.addEventListener("click", () => {
+      const visible = passwordInput.type === "text";
+      passwordInput.type = visible ? "password" : "text";
+      toggleButton.textContent = visible ? "Show" : "Hide";
+    });
+  }
 
-  const requestId =
-    "login_" +
-    Date.now();
+  if (loginForm) {
+    loginForm.addEventListener("submit", (event) => {
+      event.preventDefault();
 
+      if (loginBusy) return;
 
-  console.log(
-    "Sending login request:",
-    username
-  );
+      const username = (usernameInput.value || "").trim();
+      const password = passwordInput.value || "";
 
+      setError("");
 
-  bridge.contentWindow.postMessage(
-    {
-      source: "SP_TINTED_APP",
-      type: "LOGIN",
-      payload: {
-        requestId: requestId,
-        username: username,
-        password: password
+      if (!username || !password) {
+        setError("Please enter username and password.");
+        return;
       }
-    },
-    "*"
-  );
 
-}
-
-
-// ======================================================
-// DASHBOARD
-// ======================================================
-
-function loadDashboard() {
-
-  if (!bridgeReady) {
-
-    console.error(
-      "Dashboard blocked: bridge is not ready."
-    );
-
-    return;
-  }
-
-
-  const requestId =
-    "dashboard_" +
-    Date.now();
-
-
-  bridge.contentWindow.postMessage(
-    {
-      source: "SP_TINTED_APP",
-      type: "DASHBOARD",
-      payload: {
-        requestId: requestId
+      if (!bridgeReady) {
+        setError("Connecting to SP Tinted Manager Web App...");
+        console.error("[SP] Bridge is not ready.");
+        return;
       }
-    },
-    "*"
-  );
 
-}
-
-
-// ======================================================
-// LOGIN RESULT HANDLER
-// ======================================================
-
-function handleLoginResult(result) {
-
-  if (!result) {
-
-    setConnectionStatus(
-      "Invalid response from Web App.",
-      true
-    );
-
-    return;
+      login(username, password);
+    });
   }
 
+  // ---------------------------------------------------------
+  // Login request
+  // ---------------------------------------------------------
+  function login(username, password) {
+    setLoginBusy(true);
+    setError("");
 
-  if (result.success) {
+    postToBridge("LOGIN", {
+      requestId: "login_" + Date.now(),
+      username,
+      password
+    });
+  }
 
-    console.log(
-      "LOGIN SUCCESS",
-      result.user
-    );
+  // ---------------------------------------------------------
+  // Login response
+  // ---------------------------------------------------------
+  function handleLoginResult(result) {
+    setLoginBusy(false);
 
+    if (!result || result.success !== true) {
+      setError(
+        (result && result.message) ||
+        "Invalid username or password."
+      );
+      return;
+    }
 
-    // Save logged-in user
+    console.log("[SP] LOGIN SUCCESS:", result.user);
+
     sessionStorage.setItem(
       "sp_tinted_user",
       JSON.stringify(result.user)
     );
 
+    showDashboard(result.user);
+    loadDashboard();
+  }
 
-    // Continue to dashboard
-    if (
-      typeof showDashboard === "function"
-    ) {
+  // ---------------------------------------------------------
+  // Show dashboard
+  // ---------------------------------------------------------
+  function showDashboard(user) {
+    document.getElementById("loginScreen")?.classList.add("hidden");
+    document.getElementById("app")?.classList.remove("hidden");
 
-      showDashboard(result.user);
+    const name = user?.name || "Admin";
+    const role = user?.role || "User";
 
-    } else {
+    const pname = document.getElementById("pname");
+    const prole = document.getElementById("prole");
+    const avatar = document.getElementById("avatar");
 
-      window.location.href =
-        "dashboard.html";
+    if (pname) pname.textContent = name;
+    if (prole) prole.textContent = role;
+    if (avatar) avatar.textContent =
+      name.charAt(0).toUpperCase();
+  }
 
+  // ---------------------------------------------------------
+  // Dashboard request
+  // ---------------------------------------------------------
+  function loadDashboard() {
+    if (!bridgeReady) return;
+
+    showLoading(true, "Loading Dashboard...");
+
+    postToBridge("DASHBOARD", {
+      requestId: "dashboard_" + Date.now()
+    });
+  }
+
+  // ---------------------------------------------------------
+  // Dashboard response
+  // ---------------------------------------------------------
+  function handleDashboardResult(result) {
+    showLoading(false);
+
+    if (!result || result.success !== true) {
+      console.error(
+        "[SP] Dashboard error:",
+        result?.message
+      );
+      return;
     }
 
-    return;
-  }
-
-
-  setConnectionStatus(
-    result.message || "Invalid username or password.",
-    true
-  );
-
-}
-
-
-// ======================================================
-// DASHBOARD RESULT HANDLER
-// ======================================================
-
-function handleDashboardResult(result) {
-
-  if (!result) {
-
-    console.error(
-      "Empty dashboard response."
-    );
-
-    return;
-  }
-
-
-  if (!result.success) {
-
-    console.error(
-      result.message
-    );
-
-    return;
-  }
-
-
-  console.log(
-    "Dashboard data:",
-    result
-  );
-
-
-  if (
-    typeof renderDashboard === "function"
-  ) {
-
     renderDashboard(result);
-
   }
 
-}
+  function renderDashboard(data) {
+    const dashboard = data.dashboard || data;
+
+    setText(
+      "totalCustomers",
+      dashboard.totalCustomers ?? 0
+    );
+
+    setText(
+      "todayRegistration",
+      dashboard.todayRegistration ?? 0
+    );
+
+    setText(
+      "totalVehicles",
+      dashboard.totalVehicles ?? 0
+    );
+
+    setText(
+      "monthlyRegistration",
+      dashboard.monthlyRegistration ?? 0
+    );
+
+    const tbody = document.getElementById("recent");
+    if (!tbody) return;
+
+    const rows = Array.isArray(dashboard.recentCustomers)
+      ? dashboard.recentCustomers
+      : [];
+
+    if (!rows.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="5">No customers found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(row => `
+      <tr>
+        <td>${escapeHtml(row.id)}</td>
+        <td>${escapeHtml(row.name)}</td>
+        <td>${escapeHtml(row.vehicle)}</td>
+        <td>${escapeHtml(row.phone)}</td>
+        <td>${escapeHtml(row.date)}</td>
+      </tr>
+    `).join("");
+  }
+
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  // ---------------------------------------------------------
+  // Refresh
+  // ---------------------------------------------------------
+  document.getElementById("refresh")?.addEventListener(
+    "click",
+    loadDashboard
+  );
+
+  // ---------------------------------------------------------
+  // Existing session
+  // ---------------------------------------------------------
+  try {
+    const saved = sessionStorage.getItem("sp_tinted_user");
+    if (saved) {
+      const user = JSON.parse(saved);
+      if (user && user.username) {
+        showDashboard(user);
+        // Wait for bridge READY, then request dashboard.
+        const timer = setInterval(() => {
+          if (!bridgeReady) return;
+          clearInterval(timer);
+          loadDashboard();
+        }, 100);
+      }
+    }
+  } catch (e) {
+    sessionStorage.removeItem("sp_tinted_user");
+  }
+
+})();
