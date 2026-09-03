@@ -5,7 +5,7 @@
   // ONE BACKEND URL
   // =========================================================
   const WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycby5CKM9m24vhAYelEcLhdkyhgAcFxQewpF7os0HNbRubQyGst0f_xvsnYG2K5HtL_syzg/exec";
+    "https://script.google.com/macros/s/AKfycbznBl50NeOWprixK5f1lcBKdNfQ2UEhhrWwxAW6dGcbylifpIr6upcVpPT3BEnczjqgtg/exec";
 
   const bridge = document.getElementById("bridge");
   const loginForm = document.getElementById("loginForm");
