@@ -1,886 +1,334 @@
-/**
- * =========================================================
- * SP TINTED MANAGER
- * GitHub Pages
- *
- * Connection:
- *
- * GitHub
- *    ↓
- * Apps Script Bridge
- *    ↓
- * Google Apps Script
- *    ↓
- * Google Sheets
- *
- * IMPORTANT:
- * Jangan gunakan fetch()
- * Jangan gunakan JSONP
- * =========================================================
- */
-
-
-/**
- * =========================================================
- * APPS SCRIPT WEB APP
- * =========================================================
- */
 const WEB_APP_URL =
-  'https://script.google.com/macros/s/AKfycby5CKM9m24vhAYelEcLhdkyhgAcFxQewpF7os0HNbRubQyGst0f_xvsnYG2K5HtL_syzg/exec';
+  "https://script.google.com/macros/s/AKfycby5CKM9m24vhAYelEcLhdkyhgAcFxQewpF7os0HNbRubQyGst0f_xvsnYG2K5HtL_syzg/exec";
 
-
-/**
- * =========================================================
- * BRIDGE
- * =========================================================
- */
-const bridge =
-  document.getElementById('bridge');
-
+const bridge = document.getElementById("bridge");
 
 let bridgeReady = false;
 
-let requestCounter = 0;
 
-const pendingRequests = new Map();
+// ======================================================
+// SHOW STATUS
+// ======================================================
 
+function setConnectionStatus(message, isError = false) {
 
-/**
- * =========================================================
- * LOGIN ERROR
- * =========================================================
- */
-function setLoginError(message) {
+  const status =
+    document.getElementById("connectionStatus");
 
-  const error =
-    document.getElementById('error');
+  if (!status) return;
 
+  status.textContent = message;
 
-  if (error) {
-
-    error.textContent =
-      message || '';
-
-  }
-
+  status.style.color =
+    isError ? "#ff4d5a" : "#7f9bc0";
 }
 
 
-/**
- * =========================================================
- * SEND REQUEST TO APPS SCRIPT BRIDGE
- * =========================================================
- */
-function sendToBridge(
-  type,
-  payload
-) {
+// ======================================================
+// RECEIVE MESSAGE FROM APPS SCRIPT BRIDGE
+// ======================================================
 
-  if (
-    !bridge ||
-    !bridge.contentWindow
-  ) {
+window.addEventListener("message", function (event) {
 
-    throw new Error(
-      'Apps Script bridge is not available.'
-    );
+  const message = event.data || {};
 
+  // IMPORTANT:
+  // Do NOT check event.source here.
+  // Apps Script HtmlService uses a sandboxed iframe.
+
+  if (message.source !== "SP_TINTED_BRIDGE") {
+    return;
   }
 
 
-  bridge.contentWindow.postMessage(
+  // ====================================================
+  // BRIDGE READY
+  // ====================================================
 
-    {
+  if (message.type === "READY") {
 
-      source:
-        'SP_TINTED_APP',
+    bridgeReady = true;
 
-      type:
-        type,
-
-      payload:
-        payload || {}
-
-    },
-
-    '*'
-
-  );
-
-}
-
-
-/**
- * =========================================================
- * API REQUEST
- * =========================================================
- */
-function requestApi(
-  type,
-  payload,
-  timeoutMs
-) {
-
-  timeoutMs =
-    timeoutMs || 20000;
-
-
-  return new Promise(
-    function (resolve, reject) {
-
-      /*
-       * Bridge belum ready
-       */
-      if (!bridgeReady) {
-
-        reject(
-          new Error(
-            'Waiting for SP Tinted Manager connection...'
-          )
-        );
-
-        return;
-      }
-
-
-      /*
-       * Request ID
-       */
-      requestCounter++;
-
-
-      const requestId =
-        'req_' +
-        requestCounter;
-
-
-      /*
-       * Timeout
-       */
-      const timer =
-        setTimeout(
-          function () {
-
-            pendingRequests.delete(
-              requestId
-            );
-
-
-            reject(
-              new Error(
-                'SP Tinted Manager connection timed out.'
-              )
-            );
-
-          },
-          timeoutMs
-        );
-
-
-      /*
-       * Store request
-       */
-      pendingRequests.set(
-        requestId,
-        {
-
-          resolve:
-            function (result) {
-
-              clearTimeout(timer);
-
-              resolve(result);
-
-            },
-
-          reject:
-            function (error) {
-
-              clearTimeout(timer);
-
-              reject(error);
-
-            }
-
-        }
-      );
-
-
-      /*
-       * Send to Bridge
-       */
-      sendToBridge(
-        type,
-        {
-
-          requestId:
-            requestId,
-
-          ...payload
-
-        }
-      );
-
-    }
-  );
-
-}
-
-
-/**
- * =========================================================
- * RECEIVE MESSAGE FROM APPS SCRIPT BRIDGE
- * =========================================================
- */
-window.addEventListener(
-  'message',
-  function (event) {
-
-    const message =
-      event.data || {};
-
-
-    /*
-     * Only accept our Bridge
-     */
-    if (
-      bridge &&
-      event.source !==
-        bridge.contentWindow
-    ) {
-
-      return;
-    }
-
-
-    /*
-     * Ignore other messages
-     */
-    if (
-      message.source !==
-      'SP_TINTED_BRIDGE'
-    ) {
-
-      return;
-    }
-
-
-    /**
-     * =====================================================
-     * BRIDGE READY
-     * =====================================================
-     */
-    if (
-      message.type === 'READY'
-    ) {
-
-      bridgeReady = true;
-
-      console.log(
-        'SP Tinted Manager Bridge READY'
-      );
-
-      return;
-    }
-
-
-    /*
-     * Response payload
-     */
-    const payload =
-      message.payload || {};
-
-
-    const requestId =
-      payload.requestId;
-
-
-    /*
-     * Ignore unknown request
-     */
-    if (
-      !requestId ||
-      !pendingRequests.has(
-        requestId
-      )
-    ) {
-
-      return;
-    }
-
-
-    const request =
-      pendingRequests.get(
-        requestId
-      );
-
-
-    pendingRequests.delete(
-      requestId
-    );
-
-
-    /**
-     * =====================================================
-     * ERROR
-     * =====================================================
-     */
-    if (
-      message.type === 'ERROR'
-    ) {
-
-      const errorMessage =
-        payload.result &&
-        payload.result.message
-          ? payload.result.message
-          : 'Apps Script request failed.';
-
-
-      request.reject(
-        new Error(
-          errorMessage
-        )
-      );
-
-
-      return;
-    }
-
-
-    /**
-     * =====================================================
-     * SUCCESS
-     * =====================================================
-     */
-    request.resolve(
-      payload.result
-    );
-
-  }
-);
-
-
-/**
- * =========================================================
- * BRIDGE LOAD
- * =========================================================
- */
-bridge.addEventListener(
-  'load',
-  function () {
+    setConnectionStatus("");
 
     console.log(
-      'SP Tinted Manager Apps Script Bridge loaded.'
+      "SP Tinted Manager Web App connected."
     );
-
-  }
-);
-
-
-/**
- * =========================================================
- * LOGIN FORM
- * =========================================================
- */
-document
-  .getElementById('loginForm')
-  .addEventListener(
-    'submit',
-    async function (event) {
-
-      event.preventDefault();
-
-
-      const username =
-        document
-          .getElementById('email')
-          .value
-          .trim();
-
-
-      const password =
-        document
-          .getElementById('password')
-          .value;
-
-
-      const button =
-        document
-          .getElementById('login');
-
-
-      setLoginError('');
-
-
-      /*
-       * Validation
-       */
-      if (
-        !username ||
-        !password
-      ) {
-
-        setLoginError(
-          'Please enter username and password.'
-        );
-
-        return;
-      }
-
-
-      /*
-       * Bridge not ready
-       */
-      if (!bridgeReady) {
-
-        setLoginError(
-          'Connecting to SP Tinted Manager Web App...'
-        );
-
-        return;
-      }
-
-
-      /*
-       * Loading
-       */
-      button.disabled = true;
-
-      button.textContent =
-        'Signing In...';
-
-
-      try {
-
-        /**
-         * ===============================================
-         * LOGIN REQUEST
-         * ===============================================
-         */
-        const result =
-          await requestApi(
-            'LOGIN',
-            {
-
-              username:
-                username,
-
-              password:
-                password
-
-            }
-          );
-
-
-        /*
-         * Login failed
-         */
-        if (
-          !result ||
-          result.success !== true
-        ) {
-
-          setLoginError(
-
-            result &&
-            result.message
-
-              ? result.message
-
-              : 'Invalid username or password.'
-
-          );
-
-          return;
-        }
-
-
-        /**
-         * ===============================================
-         * LOGIN SUCCESS
-         * ===============================================
-         */
-        const user =
-          result.user || {};
-
-
-        document
-          .getElementById(
-            'loginScreen'
-          )
-          .classList
-          .add('hidden');
-
-
-        document
-          .getElementById(
-            'app'
-          )
-          .classList
-          .remove('hidden');
-
-
-        /*
-         * User name
-         */
-        document
-          .getElementById(
-            'pname'
-          )
-          .textContent =
-            user.name || 'Admin';
-
-
-        /*
-         * Role
-         */
-        document
-          .getElementById(
-            'prole'
-          )
-          .textContent =
-            user.role || 'Admin';
-
-
-        /*
-         * Avatar
-         */
-        document
-          .getElementById(
-            'avatar'
-          )
-          .textContent =
-
-            (
-              user.name ||
-              'A'
-            )
-              .charAt(0)
-              .toUpperCase();
-
-
-        /**
-         * ===============================================
-         * LOAD DASHBOARD
-         * ===============================================
-         */
-        loadDashboard();
-
-      }
-
-      catch (error) {
-
-        console.error(
-          'LOGIN ERROR:',
-          error
-        );
-
-
-        setLoginError(
-
-          error &&
-          error.message
-
-            ? error.message
-
-            : 'Unable to connect to SP Tinted Manager Web App.'
-
-        );
-
-      }
-
-      finally {
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          'Sign In';
-
-      }
-
-    }
-  );
-
-
-/**
- * =========================================================
- * SHOW / HIDE PASSWORD
- * =========================================================
- */
-document
-  .getElementById('toggle')
-  .addEventListener(
-    'click',
-    function () {
-
-      const password =
-        document.getElementById(
-          'password'
-        );
-
-
-      if (
-        password.type ===
-        'password'
-      ) {
-
-        password.type =
-          'text';
-
-        this.textContent =
-          'Hide';
-
-      }
-
-      else {
-
-        password.type =
-          'password';
-
-        this.textContent =
-          'Show';
-
-      }
-
-    }
-  );
-
-
-/**
- * =========================================================
- * REFRESH DASHBOARD
- * =========================================================
- */
-document
-  .getElementById('refresh')
-  .addEventListener(
-    'click',
-    loadDashboard
-  );
-
-
-/**
- * =========================================================
- * LOAD DASHBOARD
- * =========================================================
- */
-async function loadDashboard() {
-
-  const loading =
-    document.getElementById(
-      'loading'
-    );
-
-
-  loading
-    .classList
-    .remove('hidden');
-
-
-  try {
-
-    const result =
-      await requestApi(
-        'DASHBOARD',
-        {}
-      );
-
-
-    /*
-     * Dashboard error
-     */
-    if (
-      !result ||
-      result.success === false
-    ) {
-
-      console.error(
-        result &&
-        result.message
-          ? result.message
-          : 'Dashboard request failed.'
-      );
-
-      return;
-    }
-
-
-    /*
-     * Render
-     */
-    renderDashboard(
-      result
-    );
-
-  }
-
-  catch (error) {
-
-    console.error(
-      'DASHBOARD ERROR:',
-      error
-    );
-
-  }
-
-  finally {
-
-    loading
-      .classList
-      .add('hidden');
-
-  }
-
-}
-
-
-/**
- * =========================================================
- * RENDER DASHBOARD
- * =========================================================
- */
-function renderDashboard(
-  data
-) {
-
-  document
-    .getElementById(
-      'totalCustomers'
-    )
-    .textContent =
-      data.totalCustomers ?? 0;
-
-
-  document
-    .getElementById(
-      'todayRegistration'
-    )
-    .textContent =
-      data.todayRegistration ?? 0;
-
-
-  document
-    .getElementById(
-      'totalVehicles'
-    )
-    .textContent =
-      data.totalVehicles ?? 0;
-
-
-  document
-    .getElementById(
-      'monthlyRegistration'
-    )
-    .textContent =
-      data.monthlyRegistration ?? 0;
-
-
-  const tbody =
-    document.getElementById(
-      'recent'
-    );
-
-
-  const rows =
-    data.recentCustomers || [];
-
-
-  /*
-   * No records
-   */
-  if (!rows.length) {
-
-    tbody.innerHTML =
-      '<tr>' +
-      '<td colspan="5">' +
-      'No customer records found.' +
-      '</td>' +
-      '</tr>';
 
     return;
   }
 
 
-  /*
-   * Customer rows
-   */
-  tbody.innerHTML =
-    rows
-      .map(
-        function (row) {
+  // ====================================================
+  // LOGIN RESULT
+  // ====================================================
 
-          return (
+  if (message.type === "LOGIN_RESULT") {
 
-            '<tr>' +
+    const payload = message.payload || {};
+    const result = payload.result || {};
 
-            '<td>' +
-            escapeHtml(row.id) +
-            '</td>' +
+    console.log(
+      "Login response:",
+      result
+    );
 
-            '<td>' +
-            escapeHtml(row.name) +
-            '</td>' +
+    handleLoginResult(result);
 
-            '<td>' +
-            escapeHtml(row.vehicle) +
-            '</td>' +
+    return;
+  }
 
-            '<td>' +
-            escapeHtml(row.phone) +
-            '</td>' +
 
-            '<td>' +
-            escapeHtml(row.date) +
-            '</td>' +
+  // ====================================================
+  // DASHBOARD RESULT
+  // ====================================================
 
-            '</tr>'
+  if (message.type === "DASHBOARD_RESULT") {
 
-          );
+    const payload = message.payload || {};
+    const result = payload.result || {};
 
-        }
-      )
-      .join('');
+    console.log(
+      "Dashboard response:",
+      result
+    );
+
+    handleDashboardResult(result);
+
+    return;
+  }
+
+
+  // ====================================================
+  // ERROR
+  // ====================================================
+
+  if (message.type === "ERROR") {
+
+    const payload = message.payload || {};
+
+    console.error(
+      "Apps Script error:",
+      payload.message
+    );
+
+    setConnectionStatus(
+      payload.message || "Connection error.",
+      true
+    );
+
+  }
+
+});
+
+
+// ======================================================
+// LOAD APPS SCRIPT BRIDGE
+// ======================================================
+
+if (bridge) {
+
+  bridge.src = WEB_APP_URL;
+
+  bridge.addEventListener("load", function () {
+
+    console.log(
+      "Apps Script bridge iframe loaded."
+    );
+
+  });
 
 }
 
 
-/**
- * =========================================================
- * HTML ESCAPE
- * =========================================================
- */
-function escapeHtml(
-  value
-) {
+// ======================================================
+// WAIT FOR BRIDGE
+// ======================================================
 
-  return String(
-    value ?? ''
-  )
+setConnectionStatus(
+  "Connecting to SP Tinted Manager Web App..."
+);
 
-    .replace(
-      /&/g,
-      '&amp;'
-    )
 
-    .replace(
-      /</g,
-      '&lt;'
-    )
+// ======================================================
+// LOGIN
+// ======================================================
 
-    .replace(
-      />/g,
-      '&gt;'
-    )
+function login(username, password) {
 
-    .replace(
-      /"/g,
-      '&quot;'
-    )
+  if (!bridgeReady) {
 
-    .replace(
-      /'/g,
-      '&#039;'
+    setConnectionStatus(
+      "SP Tinted Manager Web App is not ready.",
+      true
     );
+
+    console.error(
+      "Login blocked: bridge is not ready."
+    );
+
+    return;
+  }
+
+
+  const requestId =
+    "login_" +
+    Date.now();
+
+
+  console.log(
+    "Sending login request:",
+    username
+  );
+
+
+  bridge.contentWindow.postMessage(
+    {
+      source: "SP_TINTED_APP",
+      type: "LOGIN",
+      payload: {
+        requestId: requestId,
+        username: username,
+        password: password
+      }
+    },
+    "*"
+  );
+
+}
+
+
+// ======================================================
+// DASHBOARD
+// ======================================================
+
+function loadDashboard() {
+
+  if (!bridgeReady) {
+
+    console.error(
+      "Dashboard blocked: bridge is not ready."
+    );
+
+    return;
+  }
+
+
+  const requestId =
+    "dashboard_" +
+    Date.now();
+
+
+  bridge.contentWindow.postMessage(
+    {
+      source: "SP_TINTED_APP",
+      type: "DASHBOARD",
+      payload: {
+        requestId: requestId
+      }
+    },
+    "*"
+  );
+
+}
+
+
+// ======================================================
+// LOGIN RESULT HANDLER
+// ======================================================
+
+function handleLoginResult(result) {
+
+  if (!result) {
+
+    setConnectionStatus(
+      "Invalid response from Web App.",
+      true
+    );
+
+    return;
+  }
+
+
+  if (result.success) {
+
+    console.log(
+      "LOGIN SUCCESS",
+      result.user
+    );
+
+
+    // Save logged-in user
+    sessionStorage.setItem(
+      "sp_tinted_user",
+      JSON.stringify(result.user)
+    );
+
+
+    // Continue to dashboard
+    if (
+      typeof showDashboard === "function"
+    ) {
+
+      showDashboard(result.user);
+
+    } else {
+
+      window.location.href =
+        "dashboard.html";
+
+    }
+
+    return;
+  }
+
+
+  setConnectionStatus(
+    result.message || "Invalid username or password.",
+    true
+  );
+
+}
+
+
+// ======================================================
+// DASHBOARD RESULT HANDLER
+// ======================================================
+
+function handleDashboardResult(result) {
+
+  if (!result) {
+
+    console.error(
+      "Empty dashboard response."
+    );
+
+    return;
+  }
+
+
+  if (!result.success) {
+
+    console.error(
+      result.message
+    );
+
+    return;
+  }
+
+
+  console.log(
+    "Dashboard data:",
+    result
+  );
+
+
+  if (
+    typeof renderDashboard === "function"
+  ) {
+
+    renderDashboard(result);
+
+  }
 
 }
