@@ -13,8 +13,20 @@
   const closeLogoutButton = document.getElementById("closeLogout");
   const cancelLogoutButton = document.getElementById("cancelLogout");
   const confirmLogoutButton = document.getElementById("confirmLogout");
+  const settingsNav = document.getElementById("settingsNav");
+  const passwordModal = document.getElementById("passwordModal");
+  const closePasswordButton = document.getElementById("closePassword");
+  const cancelPasswordButton = document.getElementById("cancelPassword");
+  const passwordForm = document.getElementById("passwordForm");
+  const currentPasswordInput = document.getElementById("currentPassword");
+  const newPasswordInput = document.getElementById("newPassword");
+  const confirmPasswordInput = document.getElementById("confirmPassword");
+  const passwordError = document.getElementById("passwordError");
+  const passwordSuccess = document.getElementById("passwordSuccess");
+  const savePasswordButton = document.getElementById("savePassword");
   let loginBusy = false;
   let logoutBusy = false;
+  let passwordBusy = false;
 
   function setError(message){ if(errorBox) errorBox.textContent = message || ""; }
   function showLoading(show,text){
@@ -64,9 +76,71 @@
   closeLogoutButton?.addEventListener("click",closeLogoutModal);
   cancelLogoutButton?.addEventListener("click",closeLogoutModal);
   logoutModal?.addEventListener("click",event=>{if(event.target===logoutModal)closeLogoutModal();});
-  document.addEventListener("keydown",event=>{
-    if(event.key==="Escape"&&logoutModal&&!logoutModal.classList.contains("hidden"))closeLogoutModal();
+
+  function setPasswordMessage(errorMessage="",successMessage=""){
+    if(passwordError)passwordError.textContent=errorMessage;
+    if(passwordSuccess)passwordSuccess.textContent=successMessage;
+  }
+  function openPasswordModal(){
+    if(!passwordModal||passwordBusy)return;
+    setPasswordMessage();
+    if(passwordForm)passwordForm.reset();
+    passwordModal.classList.remove("hidden");document.body.classList.add("modal-open");
+    setTimeout(()=>currentPasswordInput?.focus(),30);
+  }
+  function closePasswordModal(){
+    if(!passwordModal||passwordBusy)return;
+    passwordModal.classList.add("hidden");document.body.classList.remove("modal-open");
+    if(passwordForm)passwordForm.reset();
+    setPasswordMessage();
+    settingsNav?.focus();
+  }
+  settingsNav?.addEventListener("click",openPasswordModal);
+  settingsNav?.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" ") {event.preventDefault();openPasswordModal();}});
+  closePasswordButton?.addEventListener("click",closePasswordModal);
+  cancelPasswordButton?.addEventListener("click",closePasswordModal);
+  passwordModal?.addEventListener("click",event=>{if(event.target===passwordModal)closePasswordModal();});
+  document.querySelectorAll(".password-toggle").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const target=document.getElementById(button.dataset.target);
+      if(!target)return;
+      const visible=target.type==="text";
+      target.type=visible?"password":"text";
+      button.textContent=visible?"Show":"Hide";
+    });
   });
+  if(passwordForm)passwordForm.addEventListener("submit",async event=>{
+    event.preventDefault();if(passwordBusy)return;
+    const currentPassword=currentPasswordInput?.value||"";
+    const newPassword=newPasswordInput?.value||"";
+    const confirmPassword=confirmPasswordInput?.value||"";
+    setPasswordMessage();
+    if(!currentPassword||!newPassword||!confirmPassword){setPasswordMessage("Please complete all password fields.");return;}
+    if(newPassword.length<8){setPasswordMessage("New password must be at least 8 characters.");return;}
+    if(newPassword!==confirmPassword){setPasswordMessage("New password and confirmation do not match.");return;}
+    if(currentPassword===newPassword){setPasswordMessage("New password must be different from the current password.");return;}
+    passwordBusy=true;
+    if(savePasswordButton){savePasswordButton.disabled=true;savePasswordButton.textContent="Changing...";}
+    try{
+      await api("change_password",{method:"POST",body:{currentPassword,newPassword}});
+      setPasswordMessage("","Password changed successfully.");
+      if(currentPasswordInput)currentPasswordInput.value="";
+      if(newPasswordInput)newPasswordInput.value="";
+      if(confirmPasswordInput)confirmPasswordInput.value="";
+      setTimeout(()=>{if(!passwordBusy)closePasswordModal();},900);
+    }catch(error){setPasswordMessage(error.message||"Unable to change password.");}
+    finally{
+      passwordBusy=false;
+      if(savePasswordButton){savePasswordButton.disabled=false;savePasswordButton.textContent="Change Password";}
+    }
+  });
+
+  document.addEventListener("keydown",event=>{
+    if(event.key!=="Escape")return;
+    if(logoutModal&&!logoutModal.classList.contains("hidden"))closeLogoutModal();
+    else if(passwordModal&&!passwordModal.classList.contains("hidden"))closePasswordModal();
+  });
+
   confirmLogoutButton?.addEventListener("click",async()=>{
     if(logoutBusy)return;
     logoutBusy=true;
