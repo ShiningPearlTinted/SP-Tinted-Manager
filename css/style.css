@@ -43,3 +43,14 @@ table{width:100%;border-collapse:collapse;min-width:760px}thead{background:#222c
 .modal-actions button:focus-visible,.modal-close:focus-visible,.password-toggle:focus-visible{outline:2px solid #e24;outline-offset:3px}
 @media(max-width:1050px){.sidebar{width:235px;min-width:235px}.sidebrand{padding:0 40px}.stats{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.sidebar{width:70px;min-width:70px}.sidebrand{padding:0;justify-content:center;font-size:0}.sidebrand span{font-size:18px}.nav{justify-content:center;padding:0}.nav span{display:none}.sidefoot{font-size:0}.stats{grid-template-columns:1fr}.content{padding:16px}.headright>div:last-child{display:none}header{padding:0 16px}header h2{font-size:22px}.logout-modal,.password-modal{padding:31px 22px 23px}.modal-actions{gap:9px}}
+
+/* Requested Settings / Change Password UI improvements */
+#settingsNav{cursor:pointer!important;pointer-events:auto!important;user-select:none}
+#settingsNav *{cursor:pointer!important;pointer-events:none}
+.password-modal form{width:100%!important}
+.password-modal .password-field{display:flex!important;align-items:stretch!important;width:100%!important;height:50px!important;margin:0!important}
+.password-modal .password-field input{display:block!important;box-sizing:border-box!important;flex:1 1 auto!important;width:1px!important;min-width:0!important;height:50px!important;padding:0 14px!important;border:1px solid #364052!important;border-right:0!important;border-radius:10px 0 0 10px!important;background:#151a23!important;color:#fff!important;font-size:14px!important;line-height:50px!important;outline:none!important}
+.password-modal .password-field input:focus{border-color:#6a7890!important;box-shadow:0 0 0 2px rgba(106,120,144,.12)!important}
+.password-modal .password-toggle{display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;flex:0 0 76px!important;width:76px!important;height:50px!important;margin:0!important;padding:0!important;border:1px solid #364052!important;border-left:1px solid #364052!important;border-radius:0 10px 10px 0!important;background:#202733!important;color:#b6c3d5!important;font-size:13px!important;font-weight:600!important;cursor:pointer!important}
+.password-modal .password-toggle:hover{background:#2a3341!important;color:#fff!important}
+.password-modal .modal-actions{margin-top:18px!important}
