@@ -31,7 +31,7 @@
       <div class="nav">♟ <span>Customer</span></div>
       <div class="nav">▣ <span>Invoice</span></div>
       <div class="nav">♙ <span>User Management</span></div>
-      <div class="nav">⚙ <span>Settings</span></div>
+      <div id="settingsNav" class="nav" role="button" tabindex="0">⚙ <span>Settings</span></div>
     </nav>
     <div class="sidefoot">SP Tinted Management</div>
   </aside>
@@ -70,6 +70,42 @@
       <button id="cancelLogout" class="modal-cancel" type="button">Cancel</button>
       <button id="confirmLogout" class="modal-danger" type="button">Logout</button>
     </div>
+  </div>
+</div>
+
+<div id="passwordModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="passwordTitle">
+  <div class="password-modal">
+    <button id="closePassword" class="modal-close" type="button" aria-label="Close">×</button>
+    <div class="password-icon" aria-hidden="true">🔒</div>
+    <h3 id="passwordTitle">Change Password</h3>
+    <p>Update your account password securely.</p>
+    <form id="passwordForm" autocomplete="off">
+      <label for="currentPassword">Current Password</label>
+      <div class="password-field">
+        <input id="currentPassword" type="password" autocomplete="current-password" required>
+        <button type="button" class="password-toggle" data-target="currentPassword">Show</button>
+      </div>
+
+      <label for="newPassword">New Password</label>
+      <div class="password-field">
+        <input id="newPassword" type="password" autocomplete="new-password" minlength="8" required>
+        <button type="button" class="password-toggle" data-target="newPassword">Show</button>
+      </div>
+
+      <label for="confirmPassword">Confirm New Password</label>
+      <div class="password-field">
+        <input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+        <button type="button" class="password-toggle" data-target="confirmPassword">Show</button>
+      </div>
+
+      <div id="passwordError" class="error password-error" aria-live="polite"></div>
+      <div id="passwordSuccess" class="success-message" aria-live="polite"></div>
+
+      <div class="modal-actions">
+        <button id="cancelPassword" class="modal-cancel" type="button">Cancel</button>
+        <button id="savePassword" class="modal-danger" type="submit">Change Password</button>
+      </div>
+    </form>
   </div>
 </div>
 
