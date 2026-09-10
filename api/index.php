@@ -12,8 +12,6 @@ session_set_cookie_params([
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-/* Config is kept outside the Git deployment folder:
-   public_html/spmanager_config/config.local.php */
 $configFile = dirname(__DIR__, 2) . '/spmanager_config/config.local.php';
 
 if (!file_exists($configFile)) {
@@ -83,6 +81,51 @@ try {
             ];
 
             echo json_encode(['success' => true, 'message' => 'Login successful.', 'user' => $_SESSION['user']]);
+            exit;
+
+        case 'change_password':
+            if (!isset($_SESSION['user']['username'])) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Not authenticated.']);
+                exit;
+            }
+
+            $currentPassword = (string)($input['currentPassword'] ?? '');
+            $newPassword = (string)($input['newPassword'] ?? '');
+
+            if ($currentPassword === '' || $newPassword === '') {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Current password and new password are required.']);
+                exit;
+            }
+
+            if (strlen($newPassword) < 8) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'New password must be at least 8 characters.']);
+                exit;
+            }
+
+            $stmt = $pdo->prepare('SELECT id, password_hash FROM users WHERE username = ? LIMIT 1');
+            $stmt->execute([$_SESSION['user']['username']]);
+            $user = $stmt->fetch();
+
+            if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Current password is incorrect.']);
+                exit;
+            }
+
+            if (password_verify($newPassword, $user['password_hash'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'New password must be different from the current password.']);
+                exit;
+            }
+
+            $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+            $update = $pdo->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
+            $update->execute([$newHash, $user['id']]);
+
+            echo json_encode(['success' => true, 'message' => 'Password changed successfully.']);
             exit;
 
         case 'logout':
