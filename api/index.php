@@ -10,10 +10,11 @@ session_set_cookie_params([
 ]);
 
 session_start();
-
 header('Content-Type: application/json; charset=utf-8');
 
-$configFile = __DIR__ . '/config.local.php';
+/* Config is kept outside the Git deployment folder:
+   public_html/spmanager_config/config.local.php */
+$configFile = dirname(__DIR__, 2) . '/spmanager_config/config.local.php';
 
 if (!file_exists($configFile)) {
     http_response_code(500);
@@ -72,6 +73,7 @@ try {
             $update = $pdo->prepare('UPDATE users SET last_login_at = NOW() WHERE id = ?');
             $update->execute([$user['id']]);
 
+            session_regenerate_id(true);
             $_SESSION['user'] = [
                 'userId' => $user['user_id'],
                 'fullName' => $user['full_name'],
@@ -80,15 +82,12 @@ try {
                 'loginTime' => date('c'),
             ];
 
-            echo json_encode([
-                'success' => true,
-                'message' => 'Login successful.',
-                'user' => $_SESSION['user']
-            ]);
+            echo json_encode(['success' => true, 'message' => 'Login successful.', 'user' => $_SESSION['user']]);
             exit;
 
         case 'logout':
             $_SESSION = [];
+
             if (ini_get('session.use_cookies')) {
                 $params = session_get_cookie_params();
                 setcookie(
@@ -101,12 +100,9 @@ try {
                     (bool)$params['httponly']
                 );
             }
-            session_destroy();
 
-            echo json_encode([
-                'success' => true,
-                'message' => 'Logout successful.'
-            ]);
+            session_destroy();
+            echo json_encode(['success' => true, 'message' => 'Logout successful.']);
             exit;
 
         case 'session':
@@ -140,8 +136,7 @@ try {
 
             $recentStmt = $pdo->query(
                 'SELECT id, name, vehicle, phone, registration_date
-                 FROM customers
-                 ORDER BY registration_date DESC, id DESC LIMIT 10'
+                 FROM customers ORDER BY registration_date DESC, id DESC LIMIT 10'
             );
 
             $recent = [];
