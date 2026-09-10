@@ -55,14 +55,15 @@ try {
                 exit;
             }
 
+            // Password is intentionally stored/read as plain text per requested setup.
             $stmt = $pdo->prepare(
-                'SELECT id, user_id, full_name, username, password_hash, role, status
+                'SELECT id, user_id, full_name, username, password, role, status
                  FROM users WHERE username = ? LIMIT 1'
             );
             $stmt->execute([$username]);
             $user = $stmt->fetch();
 
-            if (!$user || $user['status'] !== 'Active' || !password_verify($password, $user['password_hash'])) {
+            if (!$user || $user['status'] !== 'Active' || $password !== (string)$user['password']) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'message' => 'Invalid username or password.']);
                 exit;
@@ -105,25 +106,26 @@ try {
                 exit;
             }
 
-            $stmt = $pdo->prepare('SELECT id, password_hash FROM users WHERE username = ? LIMIT 1');
+            $stmt = $pdo->prepare(
+                'SELECT id, password FROM users WHERE username = ? LIMIT 1'
+            );
             $stmt->execute([$_SESSION['user']['username']]);
             $user = $stmt->fetch();
 
-            if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
+            if (!$user || $currentPassword !== (string)$user['password']) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'message' => 'Current password is incorrect.']);
                 exit;
             }
 
-            if (password_verify($newPassword, $user['password_hash'])) {
+            if ($newPassword === (string)$user['password']) {
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'New password must be different from the current password.']);
                 exit;
             }
 
-            $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
-            $update = $pdo->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
-            $update->execute([$newHash, $user['id']]);
+            $update = $pdo->prepare('UPDATE users SET password = ? WHERE id = ?');
+            $update->execute([$newPassword, $user['id']]);
 
             echo json_encode(['success' => true, 'message' => 'Password changed successfully.']);
             exit;
