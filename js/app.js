@@ -24,9 +24,7 @@
   const passwordError = document.getElementById("passwordError");
   const passwordSuccess = document.getElementById("passwordSuccess");
   const savePasswordButton = document.getElementById("savePassword");
-  let loginBusy = false;
-  let logoutBusy = false;
-  let passwordBusy = false;
+  let loginBusy = false, logoutBusy = false, passwordBusy = false;
 
   function setError(message){ if(errorBox) errorBox.textContent = message || ""; }
   function showLoading(show,text){
@@ -48,9 +46,11 @@
     if(!response.ok||!data||data.success!==true)throw new Error((data&&data.message)||`Request failed (HTTP ${response.status}).`);
     return data;
   }
+
   if(toggleButton&&passwordInput)toggleButton.addEventListener("click",()=>{
     const visible=passwordInput.type==="text";passwordInput.type=visible?"password":"text";toggleButton.textContent=visible?"Show":"Hide";
   });
+
   if(loginForm)loginForm.addEventListener("submit",async event=>{
     event.preventDefault();if(loginBusy)return;
     const username=(usernameInput.value||"").trim(),password=passwordInput.value||"";setError("");
@@ -84,36 +84,43 @@
   function openPasswordModal(){
     if(!passwordModal||passwordBusy)return;
     setPasswordMessage();
-    if(passwordForm)passwordForm.reset();
+    passwordForm?.reset();
     passwordModal.classList.remove("hidden");document.body.classList.add("modal-open");
     setTimeout(()=>currentPasswordInput?.focus(),30);
   }
   function closePasswordModal(){
     if(!passwordModal||passwordBusy)return;
     passwordModal.classList.add("hidden");document.body.classList.remove("modal-open");
-    if(passwordForm)passwordForm.reset();
-    setPasswordMessage();
-    settingsNav?.focus();
+    passwordForm?.reset();setPasswordMessage();settingsNav?.focus();
   }
+
+  // Primary handler.
   settingsNav?.addEventListener("click",openPasswordModal);
-  settingsNav?.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" ") {event.preventDefault();openPasswordModal();}});
+  settingsNav?.addEventListener("keydown",event=>{
+    if(event.key==="Enter"||event.key===" "){event.preventDefault();openPasswordModal();}
+  });
+  // Fallback delegated handler: guarantees Settings works even if the nav element
+  // is clicked through its child span.
+  document.addEventListener("click",event=>{
+    const target=event.target.closest?.("#settingsNav");
+    if(target)openPasswordModal();
+  });
+
   closePasswordButton?.addEventListener("click",closePasswordModal);
   cancelPasswordButton?.addEventListener("click",closePasswordModal);
   passwordModal?.addEventListener("click",event=>{if(event.target===passwordModal)closePasswordModal();});
+
   document.querySelectorAll(".password-toggle").forEach(button=>{
     button.addEventListener("click",()=>{
       const target=document.getElementById(button.dataset.target);
       if(!target)return;
-      const visible=target.type==="text";
-      target.type=visible?"password":"text";
-      button.textContent=visible?"Show":"Hide";
+      const visible=target.type==="text";target.type=visible?"password":"text";button.textContent=visible?"Show":"Hide";
     });
   });
+
   if(passwordForm)passwordForm.addEventListener("submit",async event=>{
     event.preventDefault();if(passwordBusy)return;
-    const currentPassword=currentPasswordInput?.value||"";
-    const newPassword=newPasswordInput?.value||"";
-    const confirmPassword=confirmPasswordInput?.value||"";
+    const currentPassword=currentPasswordInput?.value||"",newPassword=newPasswordInput?.value||"",confirmPassword=confirmPasswordInput?.value||"";
     setPasswordMessage();
     if(!currentPassword||!newPassword||!confirmPassword){setPasswordMessage("Please complete all password fields.");return;}
     if(newPassword.length<8){setPasswordMessage("New password must be at least 8 characters.");return;}
@@ -124,9 +131,7 @@
     try{
       await api("change_password",{method:"POST",body:{currentPassword,newPassword}});
       setPasswordMessage("","Password changed successfully.");
-      if(currentPasswordInput)currentPasswordInput.value="";
-      if(newPasswordInput)newPasswordInput.value="";
-      if(confirmPasswordInput)confirmPasswordInput.value="";
+      currentPasswordInput.value="";newPasswordInput.value="";confirmPasswordInput.value="";
       setTimeout(()=>{if(!passwordBusy)closePasswordModal();},900);
     }catch(error){setPasswordMessage(error.message||"Unable to change password.");}
     finally{
@@ -147,8 +152,7 @@
     if(confirmLogoutButton){confirmLogoutButton.disabled=true;confirmLogoutButton.textContent="Logging out...";}
     if(cancelLogoutButton)cancelLogoutButton.disabled=true;
     if(closeLogoutButton)closeLogoutButton.disabled=true;
-    try{await api("logout",{method:"POST",body:{}});}
-    catch(error){console.error("[SP] Logout error:",error);}
+    try{await api("logout",{method:"POST",body:{}});}catch(error){console.error("[SP] Logout error:",error);}
     finally{
       sessionStorage.removeItem("sp_tinted_user");logoutModal?.classList.add("hidden");document.body.classList.remove("modal-open");
       document.getElementById("app")?.classList.add("hidden");document.getElementById("loginScreen")?.classList.remove("hidden");
