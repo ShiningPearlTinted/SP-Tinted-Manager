@@ -1,10 +1,8 @@
 (() => {
   "use strict";
 
-  // =========================================================
   // SP TINTED MANAGER - DIRECT PHP/MYSQL BACKEND
   // No Google Apps Script bridge.
-  // =========================================================
   const API_URL = "api/index.php";
 
   const loginForm = document.getElementById("loginForm");
@@ -14,6 +12,7 @@
   const errorBox = document.getElementById("error");
   const loginButton = document.getElementById("login");
   const loading = document.getElementById("loading");
+  const logoutButton = document.getElementById("logout");
 
   let loginBusy = false;
 
@@ -41,9 +40,7 @@
     const fetchOptions = {
       method,
       credentials: "same-origin",
-      headers: {
-        "Accept": "application/json"
-      }
+      headers: { "Accept": "application/json" }
     };
 
     if (options.body !== undefined) {
@@ -78,12 +75,10 @@
   if (loginForm) {
     loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-
       if (loginBusy) return;
 
       const username = (usernameInput.value || "").trim();
       const password = passwordInput.value || "";
-
       setError("");
 
       if (!username || !password) {
@@ -99,11 +94,7 @@
           body: { username, password }
         });
 
-        sessionStorage.setItem(
-          "sp_tinted_user",
-          JSON.stringify(result.user)
-        );
-
+        sessionStorage.setItem("sp_tinted_user", JSON.stringify(result.user));
         showDashboard(result.user);
         await loadDashboard();
       } catch (error) {
@@ -114,14 +105,32 @@
     });
   }
 
+  if (logoutButton) {
+    logoutButton.addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to logout?")) return;
+
+      logoutButton.disabled = true;
+      setError("");
+
+      try {
+        await api("logout", { method: "POST", body: {} });
+      } catch (error) {
+        console.error("[SP] Logout error:", error);
+      } finally {
+        sessionStorage.removeItem("sp_tinted_user");
+        document.getElementById("app")?.classList.add("hidden");
+        document.getElementById("loginScreen")?.classList.remove("hidden");
+        if (passwordInput) passwordInput.value = "";
+        if (logoutButton) logoutButton.disabled = false;
+      }
+    });
+  }
+
   async function checkSession() {
     try {
       const result = await api("session");
       if (result.user) {
-        sessionStorage.setItem(
-          "sp_tinted_user",
-          JSON.stringify(result.user)
-        );
+        sessionStorage.setItem("sp_tinted_user", JSON.stringify(result.user));
         showDashboard(result.user);
         await loadDashboard();
       }
@@ -161,7 +170,7 @@
   }
 
   function renderDashboard(data) {
-    const dashboard = data.dashboard || data;
+    const dashboard = data.dashboard || data.data || data;
 
     setText("totalCustomers", dashboard.totalCustomers ?? 0);
     setText("todayRegistration", dashboard.todayRegistration ?? 0);
@@ -173,11 +182,10 @@
 
     const rows = Array.isArray(dashboard.recentCustomers)
       ? dashboard.recentCustomers
-      : [];
+      : (Array.isArray(dashboard.recent) ? dashboard.recent : []);
 
     if (!rows.length) {
-      tbody.innerHTML =
-        '<tr><td colspan="5">No customers found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5">No customers found.</td></tr>';
       return;
     }
 
@@ -206,10 +214,7 @@
       .replaceAll("'", "&#039;");
   }
 
-  document.getElementById("refresh")?.addEventListener(
-    "click",
-    loadDashboard
-  );
+  document.getElementById("refresh")?.addEventListener("click", loadDashboard);
 
   checkSession();
 })();
