@@ -17,10 +17,7 @@ $configFile = __DIR__ . '/config.local.php';
 
 if (!file_exists($configFile)) {
     http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Database configuration file is missing.'
-    ]);
+    echo json_encode(['success' => false, 'message' => 'Database configuration file is missing.']);
     exit;
 }
 
@@ -39,26 +36,13 @@ try {
     );
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Database connection failed.'
-    ]);
+    echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
     exit;
 }
 
 $action = $_GET['action'] ?? '';
-
-if ($action === '') {
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (is_array($input)) {
-        $action = (string)($input['action'] ?? '');
-    }
-} else {
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (!is_array($input)) {
-        $input = [];
-    }
-}
+$input = json_decode(file_get_contents('php://input'), true);
+if (!is_array($input)) $input = [];
 
 try {
     switch ($action) {
@@ -68,34 +52,24 @@ try {
 
             if ($username === '' || $password === '') {
                 http_response_code(400);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Username and password are required.'
-                ]);
+                echo json_encode(['success' => false, 'message' => 'Username and password are required.']);
                 exit;
             }
 
             $stmt = $pdo->prepare(
                 'SELECT id, user_id, full_name, username, password_hash, role, status
-                 FROM users
-                 WHERE username = ?
-                 LIMIT 1'
+                 FROM users WHERE username = ? LIMIT 1'
             );
             $stmt->execute([$username]);
             $user = $stmt->fetch();
 
             if (!$user || $user['status'] !== 'Active' || !password_verify($password, $user['password_hash'])) {
                 http_response_code(401);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Invalid username or password.'
-                ]);
+                echo json_encode(['success' => false, 'message' => 'Invalid username or password.']);
                 exit;
             }
 
-            $update = $pdo->prepare(
-                'UPDATE users SET last_login_at = NOW() WHERE id = ?'
-            );
+            $update = $pdo->prepare('UPDATE users SET last_login_at = NOW() WHERE id = ?');
             $update->execute([$user['id']]);
 
             $_SESSION['user'] = [
@@ -113,72 +87,64 @@ try {
             ]);
             exit;
 
-        case 'session':
-            if (!isset($_SESSION['user'])) {
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'No active session.',
-                    'user' => null
-                ]);
-                exit;
+        case 'logout':
+            $_SESSION = [];
+            if (ini_get('session.use_cookies')) {
+                $params = session_get_cookie_params();
+                setcookie(
+                    session_name(),
+                    '',
+                    time() - 42000,
+                    $params['path'],
+                    $params['domain'] ?? '',
+                    (bool)$params['secure'],
+                    (bool)$params['httponly']
+                );
             }
+            session_destroy();
 
             echo json_encode([
                 'success' => true,
-                'message' => 'Active session.',
-                'user' => $_SESSION['user']
+                'message' => 'Logout successful.'
+            ]);
+            exit;
+
+        case 'session':
+            echo json_encode([
+                'success' => true,
+                'message' => isset($_SESSION['user']) ? 'Active session.' : 'No active session.',
+                'user' => $_SESSION['user'] ?? null
             ]);
             exit;
 
         case 'dashboard':
             if (!isset($_SESSION['user'])) {
                 http_response_code(401);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Not authenticated.'
-                ]);
+                echo json_encode(['success' => false, 'message' => 'Not authenticated.']);
                 exit;
             }
 
-            $totalCustomers = (int)$pdo
-                ->query('SELECT COUNT(*) FROM customers')
-                ->fetchColumn();
-
-            $todayRegistration = (int)$pdo
-                ->query('SELECT COUNT(*) FROM customers WHERE DATE(registration_date) = CURDATE()')
-                ->fetchColumn();
-
-            $totalVehicles = (int)$pdo
-                ->query(
-                    "SELECT COUNT(DISTINCT vehicle)
-                     FROM customers
-                     WHERE vehicle IS NOT NULL AND TRIM(vehicle) <> ''"
-                )
-                ->fetchColumn();
-
-            $monthlyRegistration = (int)$pdo
-                ->query(
-                    "SELECT COUNT(*)
-                     FROM customers
-                     WHERE YEAR(registration_date) = YEAR(CURDATE())
-                       AND MONTH(registration_date) = MONTH(CURDATE())"
-                )
-                ->fetchColumn();
+            $totalCustomers = (int)$pdo->query('SELECT COUNT(*) FROM customers')->fetchColumn();
+            $todayRegistration = (int)$pdo->query(
+                'SELECT COUNT(*) FROM customers WHERE DATE(registration_date) = CURDATE()'
+            )->fetchColumn();
+            $totalVehicles = (int)$pdo->query(
+                "SELECT COUNT(DISTINCT vehicle) FROM customers
+                 WHERE vehicle IS NOT NULL AND TRIM(vehicle) <> ''"
+            )->fetchColumn();
+            $monthlyRegistration = (int)$pdo->query(
+                "SELECT COUNT(*) FROM customers
+                 WHERE YEAR(registration_date) = YEAR(CURDATE())
+                 AND MONTH(registration_date) = MONTH(CURDATE())"
+            )->fetchColumn();
 
             $recentStmt = $pdo->query(
-                'SELECT
-                    id,
-                    name,
-                    vehicle,
-                    phone,
-                    registration_date
+                'SELECT id, name, vehicle, phone, registration_date
                  FROM customers
-                 ORDER BY registration_date DESC, id DESC
-                 LIMIT 10'
+                 ORDER BY registration_date DESC, id DESC LIMIT 10'
             );
 
             $recent = [];
-
             foreach ($recentStmt as $row) {
                 $recent[] = [
                     'id' => $row['id'],
@@ -203,17 +169,11 @@ try {
 
         default:
             http_response_code(404);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Unknown API action.'
-            ]);
+            echo json_encode(['success' => false, 'message' => 'Unknown API action.']);
             exit;
     }
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Server error.'
-    ]);
+    echo json_encode(['success' => false, 'message' => 'Server error.']);
     exit;
 }
