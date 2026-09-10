@@ -31,7 +31,7 @@
       <div class="nav">♟ <span>Customer</span></div>
       <div class="nav">▣ <span>Invoice</span></div>
       <div class="nav">♙ <span>User Management</span></div>
-      <div id="settingsNav" class="nav" role="button" tabindex="0">⚙ <span>Settings</span></div>
+      <div id="settingsNav" class="nav" role="button" tabindex="0" data-action="settings">⚙ <span>Settings</span></div>
     </nav>
     <div class="sidefoot">SP Tinted Management</div>
   </aside>
@@ -85,22 +85,18 @@
         <input id="currentPassword" type="password" autocomplete="current-password" required>
         <button type="button" class="password-toggle" data-target="currentPassword">Show</button>
       </div>
-
       <label for="newPassword">New Password</label>
       <div class="password-field">
         <input id="newPassword" type="password" autocomplete="new-password" minlength="8" required>
         <button type="button" class="password-toggle" data-target="newPassword">Show</button>
       </div>
-
       <label for="confirmPassword">Confirm New Password</label>
       <div class="password-field">
         <input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
         <button type="button" class="password-toggle" data-target="confirmPassword">Show</button>
       </div>
-
       <div id="passwordError" class="error password-error" aria-live="polite"></div>
       <div id="passwordSuccess" class="success-message" aria-live="polite"></div>
-
       <div class="modal-actions">
         <button id="cancelPassword" class="modal-cancel" type="button">Cancel</button>
         <button id="savePassword" class="modal-danger" type="submit">Change Password</button>
@@ -110,6 +106,6 @@
 </div>
 
 <div id="loading" class="loading hidden"><div class="loader"></div><span>Loading Dashboard...</span></div>
-<script src="js/app.js?v=20260910"></script>
+<script src="js/app.js?v=20260911"></script>
 </body>
 </html>
