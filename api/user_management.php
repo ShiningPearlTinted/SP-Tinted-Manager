@@ -88,6 +88,51 @@ function boolValue(mixed $value): int
     return filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
 }
 
+function getUserPermissions(PDO $pdo, int $userDbId, string $role): array
+{
+    $isFullAccess = in_array($role, ['Admin', 'Super Admin'], true);
+
+    if ($isFullAccess) {
+        $upsert = $pdo->prepare(
+            'INSERT INTO user_permissions
+                (user_id, dashboard, customer, invoice, user_management, settings)
+             VALUES (?, 1, 1, 1, 1, 1)
+             ON DUPLICATE KEY UPDATE
+                dashboard = 1,
+                customer = 1,
+                invoice = 1,
+                user_management = 1,
+                settings = 1'
+        );
+        $upsert->execute([$userDbId]);
+
+        return [
+            'dashboard' => true,
+            'customer' => true,
+            'invoice' => true,
+            'user_management' => true,
+            'settings' => true,
+        ];
+    }
+
+    $stmt = $pdo->prepare(
+        'SELECT dashboard, customer, invoice, user_management, settings
+         FROM user_permissions
+         WHERE user_id = ?
+         LIMIT 1'
+    );
+    $stmt->execute([$userDbId]);
+    $p = $stmt->fetch() ?: [];
+
+    return [
+        'dashboard' => (bool)($p['dashboard'] ?? false),
+        'customer' => (bool)($p['customer'] ?? false),
+        'invoice' => (bool)($p['invoice'] ?? false),
+        'user_management' => false,
+        'settings' => true,
+    ];
+}
+
 try {
     switch ($action) {
         case 'permissions':
@@ -108,26 +153,29 @@ try {
             }
 
             $stmt = $pdo->prepare(
-                'SELECT dashboard, customer, invoice, user_management, settings
-                 FROM user_permissions up
-                 INNER JOIN users u ON u.id = up.user_id
-                 WHERE u.user_id = ?
+                'SELECT id, role
+                 FROM users
+                 WHERE user_id = ?
                  LIMIT 1'
             );
             $stmt->execute([(string)($_SESSION['user']['userId'] ?? '')]);
-            $p = $stmt->fetch();
+            $currentUser = $stmt->fetch();
+
+            $permissions = $currentUser
+                ? getUserPermissions($pdo, (int)$currentUser['id'], (string)$currentUser['role'])
+                : [
+                    'dashboard' => false,
+                    'customer' => false,
+                    'invoice' => false,
+                    'user_management' => false,
+                    'settings' => true,
+                ];
 
             respond([
                 'success' => true,
                 'data' => [
-                    'isAdmin' => false,
-                    'permissions' => [
-                        'dashboard' => (bool)($p['dashboard'] ?? false),
-                        'customer' => (bool)($p['customer'] ?? false),
-                        'invoice' => (bool)($p['invoice'] ?? false),
-                        'user_management' => false,
-                        'settings' => true,
-                    ],
+                    'isAdmin' => $isAdmin,
+                    'permissions' => $permissions,
                 ],
             ]);
 
@@ -140,14 +188,7 @@ try {
             );
             $result = [];
 
-            $permissionStmt = $pdo->prepare(
-                'SELECT dashboard, customer, invoice, user_management, settings
-                 FROM user_permissions WHERE user_id = ? LIMIT 1'
-            );
-
             foreach ($stmt as $u) {
-                $permissionStmt->execute([(int)$u['id']]);
-                $p = $permissionStmt->fetch();
                 $result[] = [
                     'id' => (int)$u['id'],
                     'user_id' => $u['user_id'],
@@ -156,17 +197,47 @@ try {
                     'role' => $u['role'],
                     'status' => $u['status'],
                     'last_login_at' => $u['last_login_at'],
-                    'permissions' => [
-                        'dashboard' => (bool)($p['dashboard'] ?? false),
-                        'customer' => (bool)($p['customer'] ?? false),
-                        'invoice' => (bool)($p['invoice'] ?? false),
-                        'user_management' => (bool)($p['user_management'] ?? false),
-                        'settings' => true,
-                    ],
+                    'permissions' => getUserPermissions(
+                        $pdo,
+                        (int)$u['id'],
+                        (string)$u['role']
+                    ),
                 ];
             }
 
             respond(['success' => true, 'data' => ['users' => $result]]);
+
+        case 'get_user_permissions':
+            requireAdmin();
+
+            $id = (int)($input['id'] ?? $_GET['id'] ?? 0);
+            if ($id <= 0) {
+                respond(['success' => false, 'message' => 'Invalid user ID.'], 400);
+            }
+
+            $find = $pdo->prepare(
+                'SELECT id, role
+                 FROM users
+                 WHERE id = ?
+                 LIMIT 1'
+            );
+            $find->execute([$id]);
+            $targetUser = $find->fetch();
+
+            if (!$targetUser) {
+                respond(['success' => false, 'message' => 'User not found.'], 404);
+            }
+
+            respond([
+                'success' => true,
+                'data' => [
+                    'permissions' => getUserPermissions(
+                        $pdo,
+                        (int)$targetUser['id'],
+                        (string)$targetUser['role']
+                    ),
+                ],
+            ]);
 
         case 'add_user':
             requireAdmin();
