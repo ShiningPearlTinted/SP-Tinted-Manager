@@ -377,7 +377,23 @@
             </button>
 
             <div class="customer-view-icon">♟</div>
-            <h3 id="viewCustomerName">Customer</h3>
+
+            <div class="customer-view-name-row">
+                <h3 id="viewCustomerName">Customer</h3>
+                <button
+                    id="copyCustomerName"
+                    class="copy-btn copy-name-btn"
+                    type="button"
+                    aria-label="Copy customer name"
+                    title="Copy Name"
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </button>
+            </div>
+
             <p id="viewCustomerCode">Customer ID</p>
 
             <div id="customerViewDetails" class="customer-view-details"></div>
