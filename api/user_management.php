@@ -299,4 +299,3 @@ try {
     error_log('[SP User Management] ' . $e->getMessage());
     respond(['success' => false, 'message' => 'Server error.'], 500);
 }
-
