@@ -19,6 +19,7 @@ session_set_cookie_params([
 session_start();
 
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 
 $configFile = dirname(__DIR__, 2) . '/spmanager_config/config.local.php';
 
@@ -286,7 +287,7 @@ try {
         case 'dashboard':
             requireLogin();
 
-            $recentLimit = (int)($input['recentLimit'] ?? 5);
+            $recentLimit = (int)($input['recentLimit'] ?? ($_GET['recentLimit'] ?? 5));
             $recentLimit = in_array($recentLimit, [5, 10], true)
                 ? $recentLimit
                 : 5;
