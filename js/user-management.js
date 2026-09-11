@@ -448,6 +448,12 @@
     function bindGlobalSaveConfirmation() {
         ensureSaveConfirmModal();
 
+        if (window.__spTintedSaveConfirmationBound) {
+            return;
+        }
+
+        window.__spTintedSaveConfirmationBound = true;
+
         document.addEventListener("submit", async (event) => {
             const form = event.target;
 
@@ -1245,6 +1251,8 @@
     }
 
     async function init() {
+        window.__spTintedUserManagementVersion = "20260911-v7";
+
         ensureUserManagementPage();
         ensureCompanySettingsPage();
         bindGlobalSaveConfirmation();
