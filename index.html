@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SP Tinted Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=20260911-customer-lock">
+    <link rel="stylesheet" href="css/style.css?v=20260911-recent-5-10-v2">
 </head>
 <body>
 
@@ -151,12 +151,11 @@
                     <div class="recent-header">
                         <h3>Recent Customers</h3>
                         <div class="recent-limit-control">
-                            <label for="recentLimit">Show</label>
-                            <select id="recentLimit">
-                                <option value="5" selected>5</option>
-                                <option value="10">10</option>
+                            <span class="recent-limit-label">Show</span>
+                            <select id="recentLimit" aria-label="Number of recent customers to show">
+                                <option value="5" selected>5 Customers</option>
+                                <option value="10">10 Customers</option>
                             </select>
-                            <span>Customers</span>
                         </div>
                     </div>
 
@@ -378,13 +377,11 @@
             </button>
 
             <div class="customer-view-icon">♟</div>
-
             <div class="customer-view-name-row">
                 <h3 id="viewCustomerName">Customer</h3>
-
                 <button
                     id="copyCustomerName"
-                    class="copy-btn copy-name-btn"
+                    class="copy-btn"
                     type="button"
                     aria-label="Copy customer name"
                     title="Copy Name"
@@ -395,7 +392,6 @@
                     </svg>
                 </button>
             </div>
-
             <p id="viewCustomerCode">Customer ID</p>
 
             <div id="customerViewDetails" class="customer-view-details"></div>
@@ -408,6 +404,6 @@
         <span>Loading...</span>
     </div>
 
-    <script src="js/app.js?v=20260911-customer-lock"></script>
+    <script src="js/app.js?v=20260911-recent-5-10-v2"></script>
 </body>
 </html>
