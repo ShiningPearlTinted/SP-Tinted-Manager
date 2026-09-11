@@ -182,3 +182,38 @@
         padding: 20px;
     }
 }
+
+
+/* V2 visual correction for the add-on only */
+.customer-edit-btn,
+.customer-delete-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 58px;
+    height: 36px;
+    padding: 0 12px;
+    box-sizing: border-box;
+}
+
+.customer-edit-modal input {
+    font-family: inherit !important;
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+}
+
+.customer-edit-modal .modal-actions {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    margin-top: 22px !important;
+}
+
+.customer-edit-modal .modal-actions button {
+    min-width: 120px;
+}
+
+.customer-edit-modal .error {
+    margin-top: 12px;
+}
