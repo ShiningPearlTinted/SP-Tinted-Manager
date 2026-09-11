@@ -87,13 +87,9 @@
             requestOptions.body = JSON.stringify(options.body);
         }
 
-        const cacheBuster = `_ts=${Date.now()}`;
         const response = await fetch(
-            `${API_URL}?action=${encodeURIComponent(action)}&${cacheBuster}`,
-            {
-                ...requestOptions,
-                cache: "no-store"
-            }
+            `${API_URL}?action=${encodeURIComponent(action)}`,
+            requestOptions
         );
 
         let data;
@@ -235,7 +231,7 @@
             setText("totalVehicles", data.totalVehicles || 0);
             setText("monthlyRegistration", data.monthlyRegistration || 0);
 
-            const rows = (data.recent || []).slice(0, recentLimit);
+            const rows = data.recent || [];
             const tableBody = $("recent");
 
             if (!tableBody) {
@@ -294,15 +290,9 @@
         loadCustomers(1);
     });
 
-    $("recentLimit")?.addEventListener("change", async () => {
+    $("recentLimit")?.addEventListener("change", () => {
         recentLimit = Number($("recentLimit").value) === 10 ? 10 : 5;
-
-        await loadDashboard();
-
-        const selector = $("recentLimit");
-        if (selector) {
-            selector.value = String(recentLimit);
-        }
+        loadDashboard();
     });
 
     $("refresh")?.addEventListener("click", () => {
@@ -481,54 +471,6 @@
         }
     }
 
-    function resetCopyButton(button) {
-        if (!button) {
-            return;
-        }
-
-        button.classList.remove("copied");
-        button.innerHTML = `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="9" y="9" width="11" height="11" rx="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-        `;
-    }
-
-    async function copyText(value, button) {
-        const text = String(value ?? "");
-
-        if (!text) {
-            return;
-        }
-
-        try {
-            await navigator.clipboard.writeText(text);
-        } catch (error) {
-            const textarea = document.createElement("textarea");
-            textarea.value = text;
-            textarea.style.position = "fixed";
-            textarea.style.opacity = "0";
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand("copy");
-            textarea.remove();
-        }
-
-        if (button) {
-            button.classList.add("copied");
-            button.innerHTML = `
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="m5 12 4 4L19 6"></path>
-                </svg>
-            `;
-
-            window.setTimeout(() => {
-                resetCopyButton(button);
-            }, 1400);
-        }
-    }
-
     async function viewCustomer(id) {
         try {
             const result = await api("customer_by_id", {
@@ -540,32 +482,29 @@
 
             const customer = result.data || {};
 
-            const customerName = customer.customer_name || "Customer";
-            const customerPhone = String(customer.phone_number || "");
-            const customerCarPlate = String(customer.car_plate || "");
+            setText(
+                "viewCustomerName",
+                customer.customer_name || "Customer"
+            );
 
-            setText("viewCustomerName", customerName);
-            setText("viewCustomerCode", customer.customer_code || "");
-
-            const nameCopyButton = $("copyCustomerName");
-
-            if (nameCopyButton) {
-                nameCopyButton.dataset.copy = customerName;
-                resetCopyButton(nameCopyButton);
-            }
+            setText(
+                "viewCustomerCode",
+                customer.customer_code || ""
+            );
 
             const details = $("customerViewDetails");
 
             if (details) {
                 details.innerHTML = `
-                    <div class="customer-view-field">
+                    <div>
                         <span>Phone</span>
                         <div class="customer-view-value-row">
-                            <b>${escapeHtml(customerPhone)}</b>
+                            <b>${escapeHtml(customer.phone_number || "")}</b>
+
                             <button
-                                class="copy-btn copy-field-btn"
+                                class="copy-btn"
+                                id="copyCustomerPhone"
                                 type="button"
-                                data-copy="${escapeHtml(customerPhone)}"
                                 aria-label="Copy phone number"
                                 title="Copy Phone"
                             >
@@ -577,14 +516,15 @@
                         </div>
                     </div>
 
-                    <div class="customer-view-field">
+                    <div>
                         <span>Car Plate</span>
                         <div class="customer-view-value-row">
-                            <b>${escapeHtml(customerCarPlate)}</b>
+                            <b>${escapeHtml(customer.car_plate || "")}</b>
+
                             <button
-                                class="copy-btn copy-field-btn"
+                                class="copy-btn"
+                                id="copyCustomerPlate"
                                 type="button"
-                                data-copy="${escapeHtml(customerCarPlate)}"
                                 aria-label="Copy car plate"
                                 title="Copy Car Plate"
                             >
@@ -596,29 +536,44 @@
                         </div>
                     </div>
 
-                    <div class="customer-view-field">
+                    <div>
                         <span>Vehicle</span>
                         <b>${escapeHtml(
                             `${customer.brand || ""} ${customer.car_model || ""}`.trim()
                         )}</b>
                     </div>
 
-                    <div class="customer-view-field">
+                    <div>
                         <span>Customer Type</span>
-                        <b>${escapeHtml(customer.customer_type)}</b>
+                        <b>${escapeHtml(customer.customer_type || "")}</b>
                     </div>
 
-                    <div class="customer-view-field">
+                    <div>
                         <span>Visit</span>
-                        <b>${escapeHtml(customer.visit)}</b>
+                        <b>${escapeHtml(customer.visit || "")}</b>
                     </div>
 
-                    <div class="customer-view-field customer-view-field-full">
+                    <div>
                         <span>Registration</span>
                         <b>${escapeHtml(formatDate(customer.registration_date))}</b>
                     </div>
                 `;
+
+                setupCopyButton(
+                    $("copyCustomerPhone"),
+                    customer.phone_number || ""
+                );
+
+                setupCopyButton(
+                    $("copyCustomerPlate"),
+                    customer.car_plate || ""
+                );
             }
+
+            setupCopyButton(
+                $("copyCustomerName"),
+                customer.customer_name || ""
+            );
 
             $("customerViewModal")?.classList.remove("hidden");
             document.body.classList.add("modal-open");
@@ -627,27 +582,57 @@
         }
     }
 
+    async function copyText(text, button) {
+        if (!text || !button) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(String(text));
+        } catch (error) {
+            const textarea = document.createElement("textarea");
+            textarea.value = String(text);
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            document.execCommand("copy");
+            textarea.remove();
+        }
+
+        button.classList.add("copied");
+        button.innerHTML = `
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 12.5l4.2 4.2L19 7"></path>
+            </svg>
+        `;
+
+        window.setTimeout(() => {
+            button.classList.remove("copied");
+            button.innerHTML = `
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            `;
+        }, 1000);
+    }
+
+    function setupCopyButton(button, text) {
+        if (!button) {
+            return;
+        }
+
+        button.onclick = () => copyText(text, button);
+    }
+
     function closeCustomerView() {
         $("customerViewModal")?.classList.add("hidden");
         document.body.classList.remove("modal-open");
     }
 
     $("closeCustomerView")?.addEventListener("click", closeCustomerView);
-
-    $("copyCustomerName")?.addEventListener("click", (event) => {
-        const button = event.currentTarget;
-        copyText(button.dataset.copy || "", button);
-    });
-
-    $("customerViewDetails")?.addEventListener("click", (event) => {
-        const button = event.target.closest(".copy-field-btn");
-
-        if (!button) {
-            return;
-        }
-
-        copyText(button.dataset.copy || "", button);
-    });
 
     $("customerViewModal")?.addEventListener("click", (event) => {
         if (event.target === $("customerViewModal")) {
