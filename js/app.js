@@ -87,9 +87,13 @@
             requestOptions.body = JSON.stringify(options.body);
         }
 
+        const cacheBuster = `_ts=${Date.now()}`;
         const response = await fetch(
-            `${API_URL}?action=${encodeURIComponent(action)}`,
-            requestOptions
+            `${API_URL}?action=${encodeURIComponent(action)}&${cacheBuster}`,
+            {
+                ...requestOptions,
+                cache: "no-store"
+            }
         );
 
         let data;
@@ -231,7 +235,7 @@
             setText("totalVehicles", data.totalVehicles || 0);
             setText("monthlyRegistration", data.monthlyRegistration || 0);
 
-            const rows = data.recent || [];
+            const rows = (data.recent || []).slice(0, recentLimit);
             const tableBody = $("recent");
 
             if (!tableBody) {
@@ -290,9 +294,15 @@
         loadCustomers(1);
     });
 
-    $("recentLimit")?.addEventListener("change", () => {
+    $("recentLimit")?.addEventListener("change", async () => {
         recentLimit = Number($("recentLimit").value) === 10 ? 10 : 5;
-        loadDashboard();
+
+        await loadDashboard();
+
+        const selector = $("recentLimit");
+        if (selector) {
+            selector.value = String(recentLimit);
+        }
     });
 
     $("refresh")?.addEventListener("click", () => {
