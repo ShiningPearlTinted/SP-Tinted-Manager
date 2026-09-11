@@ -365,48 +365,31 @@
     }
 
     function addActionButtons() {
-        const tableBody = $("customerRows");
-
-        if (!tableBody) {
-            return;
-        }
-
-        const rows = tableBody.querySelectorAll("tr");
+        const rows = document.querySelectorAll("#customerRows tr");
 
         rows.forEach((row) => {
             if (row.dataset.customerActionsAdded === "1") {
                 return;
             }
 
-            const buttons = Array.from(row.querySelectorAll("button"));
-
-            const viewButton =
-                row.querySelector(".view-btn[data-id]") ||
-                row.querySelector(".view-btn") ||
-                buttons.find((button) =>
-                    button.textContent.trim().toLowerCase() === "view"
-                );
-
-            if (!viewButton) {
-                return;
-            }
-
-            const firstCell = row.querySelector("td");
-
-            const id =
-                viewButton.dataset.id ||
-                viewButton.dataset.customerId ||
-                viewButton.getAttribute("data-id") ||
-                firstCell?.textContent.trim() ||
-                "";
-
-            if (!id) {
-                return;
-            }
-
-            const actionCell = viewButton.closest("td");
+            const viewButton = row.querySelector(".view-btn");
+            const actionCell = viewButton?.closest("td") || row.lastElementChild;
 
             if (!actionCell) {
+                return;
+            }
+
+            let id = viewButton?.dataset?.id || "";
+
+            if (!id) {
+                id = row.dataset.customerId || "";
+            }
+
+            if (!id) {
+                id = row.children[0]?.textContent?.trim() || "";
+            }
+
+            if (!id || !/^\d+$/.test(String(id))) {
                 return;
             }
 
@@ -446,131 +429,108 @@
         tableBody.dataset.actionDelegation = "1";
 
         tableBody.addEventListener("click", (event) => {
-            const editButton = event.target.closest(
-                ".customer-edit-btn"
-            );
-
-            const deleteButton = event.target.closest(
-                ".customer-delete-btn"
-            );
-
-            if (!editButton && !deleteButton) {
-                return;
-            }
-
-            event.preventDefault();
-            event.stopPropagation();
+            const editButton =
+                event.target.closest(".customer-edit-btn");
 
             if (editButton) {
+                event.preventDefault();
+                event.stopPropagation();
+
                 openEditCustomer(editButton.dataset.customerId);
                 return;
             }
 
-            const row = deleteButton.closest("tr");
-            const code =
-                row?.children[0]?.textContent.trim() || "Customer";
-            const name =
-                row?.children[1]?.textContent.trim() || "Customer";
+            const deleteButton =
+                event.target.closest(".customer-delete-btn");
 
-            deleteCustomer(
-                deleteButton.dataset.customerId,
-                code,
-                name
-            );
+            if (deleteButton) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const row = deleteButton.closest("tr");
+                const code =
+                    row?.children[0]?.textContent.trim() || "Customer";
+                const name =
+                    row?.children[1]?.textContent.trim() || "Customer";
+
+                deleteCustomer(
+                    deleteButton.dataset.customerId,
+                    code,
+                    name
+                );
+            }
         });
-    }
-
-    function bindGlobalCustomerActions() {
-        if (document.documentElement.dataset.customerActionsBound === "1") {
-            return;
-        }
-
-        document.documentElement.dataset.customerActionsBound = "1";
-
-        document.addEventListener("click", (event) => {
-            const editButton = event.target.closest(
-                ".customer-edit-btn"
-            );
-
-            const deleteButton = event.target.closest(
-                ".customer-delete-btn"
-            );
-
-            if (!editButton && !deleteButton) {
-                return;
-            }
-
-            event.preventDefault();
-            event.stopPropagation();
-
-            if (editButton) {
-                openEditCustomer(editButton.dataset.customerId);
-                return;
-            }
-
-            const row = deleteButton.closest("tr");
-            const code =
-                row?.children[0]?.textContent.trim() || "Customer";
-            const name =
-                row?.children[1]?.textContent.trim() || "Customer";
-
-            deleteCustomer(
-                deleteButton.dataset.customerId,
-                code,
-                name
-            );
-        }, true);
     }
 
     function observeCustomerRows() {
         const tableBody = $("customerRows");
 
         if (!tableBody) {
-            return;
+            return false;
         }
 
         bindCustomerActionDelegation();
         addActionButtons();
+
+        if (tableBody.dataset.customerObserver === "1") {
+            return true;
+        }
+
+        tableBody.dataset.customerObserver = "1";
 
         const observer = new MutationObserver(() => {
             addActionButtons();
         });
 
         observer.observe(tableBody, {
-            childList: true
+            childList: true,
+            subtree: true
         });
+
+        return true;
+    }
+
+    function waitForCustomerRows() {
+        if (observeCustomerRows()) {
+            return;
+        }
+
+        let attempts = 0;
+
+        const timer = window.setInterval(() => {
+            attempts += 1;
+
+            if (observeCustomerRows() || attempts >= 120) {
+                window.clearInterval(timer);
+            }
+        }, 250);
     }
 
     function ensureStylesheet() {
         const href =
-            "css/customer-management.css?v=20260912-customer-edit-delete-v6";
+            "css/customer-management.css?v=20260912-customer-edit-delete-v8";
 
-        let link = document.querySelector(
-            'link[data-sp-customer-management="1"]'
-        );
-
-        if (!link) {
-            link = document.querySelector(
-                'link[href*="customer-management.css"]'
-            );
+        if (
+            document.querySelector(
+                'link[data-sp-customer-management="1"]'
+            )
+        ) {
+            return;
         }
 
-        if (!link) {
-            link = document.createElement("link");
-            link.rel = "stylesheet";
-            document.head.appendChild(link);
-        }
+        const link = document.createElement("link");
 
         link.rel = "stylesheet";
         link.href = href;
         link.dataset.spCustomerManagement = "1";
+
+        document.head.appendChild(link);
     }
 
     function start() {
         ensureStylesheet();
         ensureModal();
-        bindGlobalCustomerActions();
-        observeCustomerRows();
+        waitForCustomerRows();
     }
 
     if (document.readyState === "loading") {
