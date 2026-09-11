@@ -939,3 +939,138 @@
         margin-left: 0 !important;
     }
 }
+
+
+/* =========================================================
+   V12 - TARGETED ALIGNMENT FIX
+   DO NOT CHANGE APPLICATION FUNCTIONS.
+   ========================================================= */
+
+/* Company Details */
+#companySettingsPage .um-company-card {
+    padding: 24px !important;
+}
+
+#companySettingsPage .um-company-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 18px !important;
+}
+
+#companySettingsPage .um-company-field {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 7px !important;
+}
+
+#companySettingsPage .um-company-field label {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+#companySettingsPage .um-company-field input,
+#companySettingsPage .um-company-field textarea {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+}
+
+#companySettingsPage .um-company-full {
+    grid-column: 1 / -1 !important;
+}
+
+#companySettingsPage .um-company-actions {
+    display: flex !important;
+    width: 100% !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin-top: 20px !important;
+}
+
+#companySettingsPage #companySave {
+    display: flex !important;
+    width: 100% !important;
+    height: 44px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    text-align: center !important;
+}
+
+/* Recent Customers header */
+#dashboardPage .recent-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
+}
+
+#dashboardPage .recent-header h3 {
+    margin: 0 !important;
+    flex: 1 1 auto !important;
+}
+
+#dashboardPage .recent-limit-control {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: auto !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+}
+
+#dashboardPage .recent-limit-control select {
+    width: 70px !important;
+    min-width: 70px !important;
+    height: 36px !important;
+    margin: 0 !important;
+}
+
+/* Customer View copy button */
+#customerViewModal .customer-view-name-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 9px !important;
+    margin: 0 auto !important;
+}
+
+#customerViewModal .copy-name-btn {
+    position: static !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+@media (max-width: 800px) {
+    #companySettingsPage .um-company-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    #companySettingsPage .um-company-full {
+        grid-column: auto !important;
+    }
+}
+
+@media (max-width: 520px) {
+    #dashboardPage .recent-header {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+    }
+
+    #dashboardPage .recent-limit-control {
+        margin-left: auto !important;
+    }
+}
