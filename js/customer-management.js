@@ -384,38 +384,79 @@
                 return;
             }
 
+            const actionCell = viewButton.closest("td");
+
+            if (!actionCell) {
+                return;
+            }
+
             row.dataset.customerActionsAdded = "1";
 
-            const actionCell = viewButton.parentElement;
+            if (!actionCell.querySelector(".customer-edit-btn")) {
+                const editButton = document.createElement("button");
 
-            const editButton = document.createElement("button");
+                editButton.className = "view-btn customer-edit-btn";
+                editButton.type = "button";
+                editButton.dataset.customerId = id;
+                editButton.textContent = "Edit";
 
-            editButton.className = "view-btn customer-edit-btn";
-            editButton.type = "button";
-            editButton.textContent = "Edit";
+                actionCell.appendChild(editButton);
+            }
 
-            editButton.addEventListener("click", () => {
-                openEditCustomer(id);
-            });
+            if (!actionCell.querySelector(".customer-delete-btn")) {
+                const deleteButton = document.createElement("button");
 
-            const deleteButton = document.createElement("button");
+                deleteButton.className =
+                    "view-btn customer-delete-btn";
+                deleteButton.type = "button";
+                deleteButton.dataset.customerId = id;
+                deleteButton.textContent = "Delete";
 
-            deleteButton.className = "view-btn customer-delete-btn";
-            deleteButton.type = "button";
-            deleteButton.textContent = "Delete";
+                actionCell.appendChild(deleteButton);
+            }
+        });
+    }
 
-            const nameCell = row.children[1];
+    function bindCustomerActionDelegation() {
+        const tableBody = $("customerRows");
 
-            deleteButton.addEventListener("click", () => {
+        if (!tableBody || tableBody.dataset.actionDelegation === "1") {
+            return;
+        }
+
+        tableBody.dataset.actionDelegation = "1";
+
+        tableBody.addEventListener("click", (event) => {
+            const editButton =
+                event.target.closest(".customer-edit-btn");
+
+            if (editButton) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                openEditCustomer(editButton.dataset.customerId);
+                return;
+            }
+
+            const deleteButton =
+                event.target.closest(".customer-delete-btn");
+
+            if (deleteButton) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const row = deleteButton.closest("tr");
+                const code =
+                    row?.children[0]?.textContent.trim() || "Customer";
+                const name =
+                    row?.children[1]?.textContent.trim() || "Customer";
+
                 deleteCustomer(
-                    id,
-                    row.children[0]?.textContent.trim() || "Customer",
-                    nameCell?.textContent.trim() || "Customer"
+                    deleteButton.dataset.customerId,
+                    code,
+                    name
                 );
-            });
-
-            actionCell.appendChild(editButton);
-            actionCell.appendChild(deleteButton);
+            }
         });
     }
 
@@ -426,6 +467,7 @@
             return;
         }
 
+        bindCustomerActionDelegation();
         addActionButtons();
 
         const observer = new MutationObserver(() => {
@@ -437,7 +479,29 @@
         });
     }
 
+    function ensureStylesheet() {
+        const href =
+            "css/customer-management.css?v=20260912-customer-edit-delete-v3";
+
+        if (
+            document.querySelector(
+                'link[data-sp-customer-management="1"]'
+            )
+        ) {
+            return;
+        }
+
+        const link = document.createElement("link");
+
+        link.rel = "stylesheet";
+        link.href = href;
+        link.dataset.spCustomerManagement = "1";
+
+        document.head.appendChild(link);
+    }
+
     function start() {
+        ensureStylesheet();
         ensureModal();
         observeCustomerRows();
     }
