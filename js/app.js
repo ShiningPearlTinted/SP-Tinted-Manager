@@ -499,12 +499,11 @@
                     <div>
                         <span>Phone</span>
                         <div class="customer-view-value-row">
-                            <b>${escapeHtml(customer.phone_number || "")}</b>
-
+                            <b>${escapeHtml(customer.phone_number)}</b>
                             <button
-                                class="copy-btn"
-                                id="copyCustomerPhone"
+                                class="copy-btn copy-field-btn"
                                 type="button"
+                                data-copy-value="${escapeHtml(customer.phone_number || "")}"
                                 aria-label="Copy phone number"
                                 title="Copy Phone"
                             >
@@ -519,12 +518,11 @@
                     <div>
                         <span>Car Plate</span>
                         <div class="customer-view-value-row">
-                            <b>${escapeHtml(customer.car_plate || "")}</b>
-
+                            <b>${escapeHtml(customer.car_plate)}</b>
                             <button
-                                class="copy-btn"
-                                id="copyCustomerPlate"
+                                class="copy-btn copy-field-btn"
                                 type="button"
+                                data-copy-value="${escapeHtml(customer.car_plate || "")}"
                                 aria-label="Copy car plate"
                                 title="Copy Car Plate"
                             >
@@ -545,12 +543,12 @@
 
                     <div>
                         <span>Customer Type</span>
-                        <b>${escapeHtml(customer.customer_type || "")}</b>
+                        <b>${escapeHtml(customer.customer_type)}</b>
                     </div>
 
                     <div>
                         <span>Visit</span>
-                        <b>${escapeHtml(customer.visit || "")}</b>
+                        <b>${escapeHtml(customer.visit)}</b>
                     </div>
 
                     <div>
@@ -558,22 +556,7 @@
                         <b>${escapeHtml(formatDate(customer.registration_date))}</b>
                     </div>
                 `;
-
-                setupCopyButton(
-                    $("copyCustomerPhone"),
-                    customer.phone_number || ""
-                );
-
-                setupCopyButton(
-                    $("copyCustomerPlate"),
-                    customer.car_plate || ""
-                );
             }
-
-            setupCopyButton(
-                $("copyCustomerName"),
-                customer.customer_name || ""
-            );
 
             $("customerViewModal")?.classList.remove("hidden");
             document.body.classList.add("modal-open");
@@ -582,55 +565,55 @@
         }
     }
 
-    async function copyText(text, button) {
-        if (!text || !button) {
-            return;
-        }
-
-        try {
-            await navigator.clipboard.writeText(String(text));
-        } catch (error) {
-            const textarea = document.createElement("textarea");
-            textarea.value = String(text);
-            textarea.style.position = "fixed";
-            textarea.style.opacity = "0";
-            document.body.appendChild(textarea);
-            textarea.focus();
-            textarea.select();
-            document.execCommand("copy");
-            textarea.remove();
-        }
-
-        button.classList.add("copied");
-        button.innerHTML = `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 12.5l4.2 4.2L19 7"></path>
-            </svg>
-        `;
-
-        window.setTimeout(() => {
-            button.classList.remove("copied");
-            button.innerHTML = `
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="9" y="9" width="11" height="11" rx="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-            `;
-        }, 1000);
-    }
-
-    function setupCopyButton(button, text) {
-        if (!button) {
-            return;
-        }
-
-        button.onclick = () => copyText(text, button);
-    }
-
     function closeCustomerView() {
         $("customerViewModal")?.classList.add("hidden");
         document.body.classList.remove("modal-open");
     }
+
+    $("copyCustomerName")?.addEventListener("click", async (event) => {
+        const button = event.currentTarget;
+        const value = $("viewCustomerName")?.textContent?.trim() || "";
+
+        if (!value) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(value);
+            button.classList.add("copied");
+
+            setTimeout(() => {
+                button.classList.remove("copied");
+            }, 900);
+        } catch (error) {
+            console.error("Unable to copy customer name.", error);
+        }
+    });
+
+    $("customerViewDetails")?.addEventListener("click", async (event) => {
+        const button = event.target.closest(".copy-field-btn");
+
+        if (!button) {
+            return;
+        }
+
+        const value = button.dataset.copyValue || "";
+
+        if (!value) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(value);
+            button.classList.add("copied");
+
+            setTimeout(() => {
+                button.classList.remove("copied");
+            }, 900);
+        } catch (error) {
+            console.error("Unable to copy customer field.", error);
+        }
+    });
 
     $("closeCustomerView")?.addEventListener("click", closeCustomerView);
 
