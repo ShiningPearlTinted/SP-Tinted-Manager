@@ -326,6 +326,164 @@
         });
     }
 
+    function ensureSaveConfirmModal() {
+        if ($("saveConfirmModal")) {
+            return $("saveConfirmModal");
+        }
+
+        const modal = document.createElement("div");
+        modal.id = "saveConfirmModal";
+        modal.className = "um-confirm-overlay hidden";
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        modal.innerHTML = `
+            <div class="um-confirm-modal">
+                <div class="um-confirm-icon">?</div>
+                <h3 id="saveConfirmTitle">Confirm Save</h3>
+                <p id="saveConfirmMessage">
+                    Are you sure you want to save these changes?
+                </p>
+                <div class="um-confirm-actions">
+                    <button id="saveConfirmNo" class="um-confirm-no" type="button">
+                        NO
+                    </button>
+                    <button id="saveConfirmYes" class="um-confirm-yes" type="button">
+                        YES
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        return modal;
+    }
+
+    function confirmSave(message, title = "Confirm Save") {
+        const modal = ensureSaveConfirmModal();
+        const messageElement = $("saveConfirmMessage");
+        const titleElement = $("saveConfirmTitle");
+        const yesButton = $("saveConfirmYes");
+        const noButton = $("saveConfirmNo");
+
+        if (titleElement) {
+            titleElement.textContent = title;
+        }
+
+        if (messageElement) {
+            messageElement.textContent = message;
+        }
+
+        modal.classList.remove("hidden");
+        document.body.classList.add("modal-open");
+        yesButton?.focus();
+
+        return new Promise((resolve) => {
+            let completed = false;
+
+            const finish = (confirmed) => {
+                if (completed) {
+                    return;
+                }
+
+                completed = true;
+                modal.classList.add("hidden");
+                document.body.classList.remove("modal-open");
+                yesButton?.removeEventListener("click", onYes);
+                noButton?.removeEventListener("click", onNo);
+                modal.removeEventListener("click", onBackdrop);
+                document.removeEventListener("keydown", onKeydown);
+                resolve(confirmed);
+            };
+
+            const onYes = () => finish(true);
+            const onNo = () => finish(false);
+            const onBackdrop = (event) => {
+                if (event.target === modal) {
+                    finish(false);
+                }
+            };
+            const onKeydown = (event) => {
+                if (event.key === "Escape") {
+                    event.preventDefault();
+                    finish(false);
+                }
+            };
+
+            yesButton?.addEventListener("click", onYes);
+            noButton?.addEventListener("click", onNo);
+            modal.addEventListener("click", onBackdrop);
+            document.addEventListener("keydown", onKeydown);
+        });
+    }
+
+    function getSaveConfirmMessage(form) {
+        if (form.id === "passwordForm") {
+            return {
+                title: "Confirm Change Password",
+                message: "Are you sure you want to change your password?"
+            };
+        }
+
+        if (form.id === "companyForm") {
+            return {
+                title: "Confirm Save",
+                message: "Are you sure you want to save the company details?"
+            };
+        }
+
+        if (form.id === "userForm") {
+            return {
+                title: "Confirm Save User",
+                message: "Are you sure you want to save this user and their permissions?"
+            };
+        }
+
+        return {
+            title: "Confirm Save",
+            message: "Are you sure you want to save or update these changes?"
+        };
+    }
+
+    function bindGlobalSaveConfirmation() {
+        ensureSaveConfirmModal();
+
+        document.addEventListener("submit", async (event) => {
+            const form = event.target;
+
+            if (!(form instanceof HTMLFormElement)) {
+                return;
+            }
+
+            if (form.id === "loginForm" || form.dataset.confirmedSubmit === "1") {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            const confirmation = getSaveConfirmMessage(form);
+            const confirmed = await confirmSave(
+                confirmation.message,
+                confirmation.title
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            form.dataset.confirmedSubmit = "1";
+
+            try {
+                form.requestSubmit(event.submitter || undefined);
+            } finally {
+                window.setTimeout(() => {
+                    delete form.dataset.confirmedSubmit;
+                }, 0);
+            }
+        }, true);
+    }
+
     function ensureUserManagementPage() {
         if ($("userManagementPage")) {
             return $("userManagementPage");
@@ -914,7 +1072,7 @@
 
                     <div class="modal-actions um-company-actions">
                         <button id="companySave" class="modal-danger" type="submit">
-                            Save Company Details
+                            SAVE
                         </button>
                     </div>
                 </form>
@@ -1007,7 +1165,7 @@
                 error.message || "Unable to save company details.";
         } finally {
             button.disabled = false;
-            button.textContent = "Save Company Details";
+            button.textContent = "SAVE";
         }
     }
 
@@ -1089,6 +1247,7 @@
     async function init() {
         ensureUserManagementPage();
         ensureCompanySettingsPage();
+        bindGlobalSaveConfirmation();
         bindNavigation();
         await refreshPermissionsForCurrentSession(true);
         startSessionWatcher();
