@@ -1,39 +1,816 @@
 (() => {
-  "use strict";
-  const API_URL = "api/index.php";
-  const $ = id => document.getElementById(id);
-  let busy=false, customerBusy=false, customerPage=1, customerSearch="", customerTotalPages=1;
-  const setText=(id,v)=>{const e=$(id);if(e)e.textContent=v??""};
-  const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
-  const showLoading=(show,text)=>{const e=$("loading");if(!e)return;e.classList.toggle("hidden",!show);const s=e.querySelector("span");if(s&&text)s.textContent=text};
-  const setError=m=>{if($("error"))$("error").textContent=m||""};
-  async function api(action,options={}){const o={method:options.method||"GET",credentials:"same-origin",headers:{Accept:"application/json"}};if(options.body!==undefined){o.headers["Content-Type"]="application/json";o.body=JSON.stringify(options.body)}const r=await fetch(`${API_URL}?action=${encodeURIComponent(action)}`,o);let d;try{d=await r.json()}catch(e){throw new Error(`Server returned HTTP ${r.status}.`)}if(!r.ok||!d||d.success!==true)throw new Error(d?.message||`Request failed (HTTP ${r.status}).`);return d}
+    "use strict";
 
-  $("toggle")?.addEventListener("click",()=>{const i=$("password"),b=$("toggle"),v=i.type==="text";i.type=v?"password":"text";b.textContent=v?"Show":"Hide"});
-  $("loginForm")?.addEventListener("submit",async e=>{e.preventDefault();if(busy)return;const username=$("email").value.trim(),password=$("password").value;setError("");if(!username||!password){setError("Please enter username and password.");return}busy=true;$("login").disabled=true;$("login").textContent="Signing In...";try{const r=await api("login",{method:"POST",body:{username,password}});sessionStorage.setItem("sp_tinted_user",JSON.stringify(r.user));showDashboard(r.user);await loadDashboard()}catch(err){setError(err.message)}finally{busy=false;$("login").disabled=false;$("login").textContent="Sign In"}});
+    const API_URL = "api/index.php";
 
-  function showDashboard(user){$("loginScreen")?.classList.add("hidden");$("app")?.classList.remove("hidden");setText("pname",user?.fullName||user?.name||"Admin");setText("prole",user?.role||"User");setText("avatar",(user?.fullName||"A").charAt(0).toUpperCase())}
-  async function checkSession(){try{const r=await api("session");if(r.user){sessionStorage.setItem("sp_tinted_user",JSON.stringify(r.user));showDashboard(r.user);await loadDashboard()}}catch(e){sessionStorage.removeItem("sp_tinted_user")}}
-  async function loadDashboard(){showLoading(true,"Loading Dashboard...");try{const r=await api("dashboard"),d=r.data||{};setText("totalCustomers",d.totalCustomers||0);setText("todayRegistration",d.todayRegistration||0);setText("totalVehicles",d.totalVehicles||0);setText("monthlyRegistration",d.monthlyRegistration||0);const rows=d.recent||[],t=$("recent");if(t)t.innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.name)}</td><td>${esc(x.vehicle)}</td><td>${esc(x.phone)}</td><td>${esc(x.date)}</td></tr>`).join(""):"<tr><td colspan=\"5\">No customers found.</td></tr>"}catch(e){console.error(e);setError(e.message)}finally{showLoading(false)}}
+    const $ = (id) => document.getElementById(id);
 
-  function setActive(page){["navDashboard","navCustomer"].forEach(id=>$(id)?.classList.remove("active"));$(page==="customer"?"navCustomer":"navDashboard")?.classList.add("active");$("dashboardPage")?.classList.toggle("hidden",page!=="dashboard");$("customerPage")?.classList.toggle("hidden",page!=="customer");setText("pageTitle",page==="customer"?"Customer":"Dashboard")}
-  $("navDashboard")?.addEventListener("click",()=>setActive("dashboard"));
-  $("navCustomer")?.addEventListener("click",()=>{setActive("customer");loadCustomers(1)});
-  $("refresh")?.addEventListener("click",()=>$("customerPage")?.classList.contains("hidden")?loadDashboard():loadCustomers(customerPage));
-  $("customerRefresh")?.addEventListener("click",()=>loadCustomers(customerPage));
-  $("customerSearchBtn")?.addEventListener("click",()=>{customerSearch=$("customerSearch").value.trim();loadCustomers(1)});
-  $("customerSearch")?.addEventListener("keydown",e=>{if(e.key==="Enter"){customerSearch=e.target.value.trim();loadCustomers(1)}});
-  $("customerPrev")?.addEventListener("click",()=>{if(customerPage>1)loadCustomers(customerPage-1)});
-  $("customerNext")?.addEventListener("click",()=>{if(customerPage<customerTotalPages)loadCustomers(customerPage+1)});
+    let loginBusy = false;
+    let logoutBusy = false;
+    let passwordBusy = false;
+    let customerBusy = false;
 
-  async function loadCustomers(page=1){if(customerBusy)return;customerBusy=true;customerPage=page;setText("customerResultInfo","Loading...");const body={page,perPage:20,search:customerSearch};try{const r=await api("customer_dashboard",{method:"POST",body}),d=r.data||{},s=d.stats||{},pg=d.pagination||{};setText("customerTotal",s.total||0);setText("customerNew",s.new||0);setText("customerReturning",s.returning||0);setText("customerVisits",s.visits||0);customerTotalPages=Number(pg.totalPages)||1;setText("customerPageInfo",`Page ${pg.page||1} of ${customerTotalPages}`);setText("customerResultInfo",`${pg.total||0} customer records`);const rows=d.customers||[],t=$("customerRows");if(!t)return;if(!rows.length){t.innerHTML='<tr><td colspan="9">No customers found.</td></tr>';return}t.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.customerCode)}</b></td><td><b>${esc(x.name)}</b></td><td>${esc(x.phone)}</td><td>${esc(x.vehicle)}</td><td>${esc(x.plate)}</td><td><span class="type-badge ${String(x.type).toLowerCase()==='returning'?'returning':'new'}">${esc(x.type)}</span></td><td>${esc(x.visit)}</td><td>${esc(formatDate(x.registrationDate))}</td><td><button class="view-btn" type="button" data-id="${x.id}">View</button></td></tr>`).join("");t.querySelectorAll(".view-btn").forEach(b=>b.addEventListener("click",()=>viewCustomer(b.dataset.id)))}catch(e){setText("customerResultInfo",e.message);const t=$("customerRows");if(t)t.innerHTML=`<tr><td colspan="9">${esc(e.message)}</td></tr>`}finally{customerBusy=false}}
-  function formatDate(v){if(!v)return"";const d=new Date(String(v).replace(" ","T"));if(Number.isNaN(d.getTime()))return v;return d.toLocaleDateString("en-GB")+" "+d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}
-  async function viewCustomer(id){try{const r=await api("customer_by_id",{method:"POST",body:{id}}),d=r.data||{};setText("viewCustomerName",d.customer_name||"Customer");setText("viewCustomerCode",d.customer_code||"");const box=$("customerViewDetails");if(box)box.innerHTML=`<div><span>Phone</span><b>${esc(d.phone_number)}</b></div><div><span>Car Plate</span><b>${esc(d.car_plate)}</b></div><div><span>Vehicle</span><b>${esc(`${d.brand||""} ${d.car_model||""}`.trim())}</b></div><div><span>Customer Type</span><b>${esc(d.customer_type)}</b></div><div><span>Visit</span><b>${esc(d.visit)}</b></div><div><span>Registration</span><b>${esc(formatDate(d.registration_date))}</b></div><div><span>Notes</span><b>${esc(d.notes||"-")}</b></div>`;$("customerViewModal")?.classList.remove("hidden")}catch(e){alert(e.message)}}
-  $("closeCustomerView")?.addEventListener("click",()=>$("customerViewModal")?.classList.add("hidden"));$("customerViewModal")?.addEventListener("click",e=>{if(e.target===$("customerViewModal"))$("customerViewModal").classList.add("hidden")});
+    let customerPage = 1;
+    let customerSearch = "";
+    let customerTotalPages = 1;
 
-  const logoutModal=$("logoutModal");function closeLogout(){logoutModal?.classList.add("hidden");document.body.classList.remove("modal-open")}$("logout")?.addEventListener("click",()=>{logoutModal?.classList.remove("hidden");document.body.classList.add("modal-open")});$("closeLogout")?.addEventListener("click",closeLogout);$("cancelLogout")?.addEventListener("click",closeLogout);$("confirmLogout")?.addEventListener("click",async()=>{if(busy)return;busy=true;try{await api("logout",{method:"POST",body:{}})}catch(e){console.error(e)}finally{sessionStorage.removeItem("sp_tinted_user");closeLogout();$("app")?.classList.add("hidden");$("loginScreen")?.classList.remove("hidden");$("password").value="";busy=false}});
+    function setText(id, value) {
+        const element = $(id);
 
-  const settingsNav=$("settingsNav"),passwordModal=$("passwordModal");function closePassword(){passwordModal?.classList.add("hidden");document.body.classList.remove("modal-open");$("passwordForm")?.reset();$("passwordError").textContent="";$("passwordSuccess").textContent=""}settingsNav?.addEventListener("click",()=>{passwordModal?.classList.remove("hidden");document.body.classList.add("modal-open")});$("closePassword")?.addEventListener("click",closePassword);$("cancelPassword")?.addEventListener("click",closePassword);document.querySelectorAll(".password-toggle").forEach(b=>b.addEventListener("click",()=>{const i=$(b.dataset.target),v=i.type==="text";i.type=v?"password":"text";b.textContent=v?"Show":"Hide"}));$("passwordForm")?.addEventListener("submit",async e=>{e.preventDefault();const a=$("currentPassword").value,n=$("newPassword").value,c=$("confirmPassword").value;$("passwordError").textContent="";$("passwordSuccess").textContent="";if(n.length<8)return $("passwordError").textContent="New password must be at least 8 characters.";if(n!==c)return $("passwordError").textContent="New password and confirmation do not match.";try{await api("change_password",{method:"POST",body:{currentPassword:a,newPassword:n}});$("passwordSuccess").textContent="Password changed successfully.";setTimeout(closePassword,900)}catch(err){$("passwordError").textContent=err.message}});
-  document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if(!logoutModal?.classList.contains("hidden"))closeLogout();else if(!passwordModal?.classList.contains("hidden"))closePassword();else $("customerViewModal")?.classList.add("hidden")});
-  checkSession();
+        if (element) {
+            element.textContent = value ?? "";
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function formatDate(value) {
+        if (!value) {
+            return "";
+        }
+
+        const date = new Date(String(value).replace(" ", "T"));
+
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+
+        return `${date.toLocaleDateString("en-GB")} ${date.toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit"
+        })}`;
+    }
+
+    function setError(message) {
+        const errorBox = $("error");
+
+        if (errorBox) {
+            errorBox.textContent = message || "";
+        }
+    }
+
+    function showLoading(show, text = "Loading...") {
+        const loading = $("loading");
+
+        if (!loading) {
+            return;
+        }
+
+        loading.classList.toggle("hidden", !show);
+
+        const label = loading.querySelector("span");
+
+        if (label) {
+            label.textContent = text;
+        }
+    }
+
+    async function api(action, options = {}) {
+        const requestOptions = {
+            method: options.method || "GET",
+            credentials: "same-origin",
+            headers: {
+                Accept: "application/json"
+            }
+        };
+
+        if (options.body !== undefined) {
+            requestOptions.headers["Content-Type"] = "application/json";
+            requestOptions.body = JSON.stringify(options.body);
+        }
+
+        const response = await fetch(
+            `${API_URL}?action=${encodeURIComponent(action)}`,
+            requestOptions
+        );
+
+        let data;
+
+        try {
+            data = await response.json();
+        } catch (error) {
+            throw new Error(`Server returned HTTP ${response.status}.`);
+        }
+
+        if (!response.ok || !data || data.success !== true) {
+            throw new Error(
+                data?.message || `Request failed (HTTP ${response.status}).`
+            );
+        }
+
+        return data;
+    }
+
+    /* ======================================================
+       LOGIN
+       ====================================================== */
+
+    $("toggle")?.addEventListener("click", () => {
+        const input = $("password");
+        const button = $("toggle");
+
+        if (!input || !button) {
+            return;
+        }
+
+        const visible = input.type === "text";
+
+        input.type = visible ? "password" : "text";
+        button.textContent = visible ? "Show" : "Hide";
+    });
+
+    $("loginForm")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (loginBusy) {
+            return;
+        }
+
+        const username = $("email")?.value.trim() || "";
+        const password = $("password")?.value || "";
+        const loginButton = $("login");
+
+        setError("");
+
+        if (!username || !password) {
+            setError("Please enter username and password.");
+            return;
+        }
+
+        loginBusy = true;
+
+        if (loginButton) {
+            loginButton.disabled = true;
+            loginButton.textContent = "Signing In...";
+        }
+
+        try {
+            const result = await api("login", {
+                method: "POST",
+                body: {
+                    username,
+                    password
+                }
+            });
+
+            sessionStorage.setItem(
+                "sp_tinted_user",
+                JSON.stringify(result.user)
+            );
+
+            showDashboard(result.user);
+            await loadDashboard();
+        } catch (error) {
+            setError(error.message || "Login failed.");
+        } finally {
+            loginBusy = false;
+
+            if (loginButton) {
+                loginButton.disabled = false;
+                loginButton.textContent = "Sign In";
+            }
+        }
+    });
+
+    async function checkSession() {
+        try {
+            const result = await api("session");
+
+            if (result.user) {
+                sessionStorage.setItem(
+                    "sp_tinted_user",
+                    JSON.stringify(result.user)
+                );
+
+                showDashboard(result.user);
+                await loadDashboard();
+            }
+        } catch (error) {
+            sessionStorage.removeItem("sp_tinted_user");
+        }
+    }
+
+    function showDashboard(user) {
+        $("loginScreen")?.classList.add("hidden");
+        $("app")?.classList.remove("hidden");
+
+        const name = user?.fullName || user?.name || "Admin";
+        const role = user?.role || "User";
+
+        setText("pname", name);
+        setText("prole", role);
+        setText("avatar", name.charAt(0).toUpperCase());
+    }
+
+    /* ======================================================
+       MAIN DASHBOARD
+       ====================================================== */
+
+    async function loadDashboard() {
+        showLoading(true, "Loading Dashboard...");
+
+        try {
+            const result = await api("dashboard");
+            const data = result.data || {};
+
+            setText("totalCustomers", data.totalCustomers || 0);
+            setText("todayRegistration", data.todayRegistration || 0);
+            setText("totalVehicles", data.totalVehicles || 0);
+            setText("monthlyRegistration", data.monthlyRegistration || 0);
+
+            const rows = data.recent || [];
+            const tableBody = $("recent");
+
+            if (!tableBody) {
+                return;
+            }
+
+            if (!rows.length) {
+                tableBody.innerHTML =
+                    '<tr><td colspan="5">No customers found.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = rows
+                .map((row) => `
+                    <tr>
+                        <td>${escapeHtml(row.id)}</td>
+                        <td>${escapeHtml(row.name)}</td>
+                        <td>${escapeHtml(row.vehicle)}</td>
+                        <td>${escapeHtml(row.phone)}</td>
+                        <td>${escapeHtml(formatDate(row.date))}</td>
+                    </tr>
+                `)
+                .join("");
+        } catch (error) {
+            console.error("[SP] Dashboard error:", error);
+            setError(error.message || "Unable to load dashboard.");
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    /* ======================================================
+       PAGE NAVIGATION
+       ====================================================== */
+
+    function setActivePage(page) {
+        $("navDashboard")?.classList.toggle("active", page === "dashboard");
+        $("navCustomer")?.classList.toggle("active", page === "customer");
+
+        $("dashboardPage")?.classList.toggle("hidden", page !== "dashboard");
+        $("customerPage")?.classList.toggle("hidden", page !== "customer");
+
+        setText(
+            "pageTitle",
+            page === "customer" ? "Customer" : "Dashboard"
+        );
+    }
+
+    $("navDashboard")?.addEventListener("click", () => {
+        setActivePage("dashboard");
+        loadDashboard();
+    });
+
+    $("navCustomer")?.addEventListener("click", () => {
+        setActivePage("customer");
+        loadCustomers(1);
+    });
+
+    $("refresh")?.addEventListener("click", () => {
+        const customerPageVisible = !$("customerPage")?.classList.contains("hidden");
+
+        if (customerPageVisible) {
+            loadCustomers(customerPage);
+        } else {
+            loadDashboard();
+        }
+    });
+
+    /* ======================================================
+       CUSTOMER DASHBOARD
+       ====================================================== */
+
+    $("customerRefresh")?.addEventListener("click", () => {
+        loadCustomers(customerPage);
+    });
+
+    $("customerSearchBtn")?.addEventListener("click", () => {
+        customerSearch = $("customerSearch")?.value.trim() || "";
+        loadCustomers(1);
+    });
+
+    $("customerSearch")?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") {
+            return;
+        }
+
+        customerSearch = event.target.value.trim();
+        loadCustomers(1);
+    });
+
+    $("customerPrev")?.addEventListener("click", () => {
+        if (customerPage > 1) {
+            loadCustomers(customerPage - 1);
+        }
+    });
+
+    $("customerNext")?.addEventListener("click", () => {
+        if (customerPage < customerTotalPages) {
+            loadCustomers(customerPage + 1);
+        }
+    });
+
+    async function loadCustomers(page = 1) {
+        if (customerBusy) {
+            return;
+        }
+
+        customerBusy = true;
+        customerPage = page;
+
+        setText("customerResultInfo", "Loading...");
+
+        try {
+            const result = await api("customer_dashboard", {
+                method: "POST",
+                body: {
+                    page,
+                    perPage: 20,
+                    search: customerSearch
+                }
+            });
+
+            const data = result.data || {};
+            const stats = data.stats || {};
+            const pagination = data.pagination || {};
+            const rows = data.customers || [];
+
+            setText("customerTotal", stats.total || 0);
+            setText("customerNew", stats.new || 0);
+            setText("customerReturning", stats.returning || 0);
+            setText("customerVisits", stats.visits || 0);
+
+            customerTotalPages = Number(pagination.totalPages) || 1;
+            customerPage = Number(pagination.page) || page;
+
+            setText(
+                "customerPageInfo",
+                `Page ${customerPage} of ${customerTotalPages}`
+            );
+
+            setText(
+                "customerResultInfo",
+                `${pagination.total || 0} customer records`
+            );
+
+            const tableBody = $("customerRows");
+
+            if (!tableBody) {
+                return;
+            }
+
+            if (!rows.length) {
+                tableBody.innerHTML =
+                    '<tr><td colspan="9">No customers found.</td></tr>';
+                updatePaginationButtons();
+                return;
+            }
+
+            tableBody.innerHTML = rows
+                .map((row) => {
+                    const type = String(row.type || "");
+                    const typeClass = type.toLowerCase() === "returning"
+                        ? "returning"
+                        : "new";
+
+                    return `
+                        <tr>
+                            <td><b>${escapeHtml(row.customerCode)}</b></td>
+                            <td><b>${escapeHtml(row.name)}</b></td>
+                            <td>${escapeHtml(row.phone)}</td>
+                            <td>${escapeHtml(row.vehicle)}</td>
+                            <td>${escapeHtml(row.plate)}</td>
+                            <td>
+                                <span class="type-badge ${typeClass}">
+                                    ${escapeHtml(type)}
+                                </span>
+                            </td>
+                            <td>${escapeHtml(row.visit)}</td>
+                            <td>${escapeHtml(formatDate(row.registrationDate))}</td>
+                            <td>
+                                <button
+                                    class="view-btn"
+                                    type="button"
+                                    data-id="${escapeHtml(row.id)}"
+                                >
+                                    View
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                })
+                .join("");
+
+            tableBody.querySelectorAll(".view-btn").forEach((button) => {
+                button.addEventListener("click", () => {
+                    viewCustomer(button.dataset.id);
+                });
+            });
+
+            updatePaginationButtons();
+        } catch (error) {
+            console.error("[SP] Customer dashboard error:", error);
+
+            setText("customerResultInfo", error.message || "Unable to load customers.");
+
+            const tableBody = $("customerRows");
+
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9">${escapeHtml(error.message)}</td>
+                    </tr>
+                `;
+            }
+
+            updatePaginationButtons();
+        } finally {
+            customerBusy = false;
+        }
+    }
+
+    function updatePaginationButtons() {
+        const previous = $("customerPrev");
+        const next = $("customerNext");
+
+        if (previous) {
+            previous.disabled = customerPage <= 1;
+        }
+
+        if (next) {
+            next.disabled = customerPage >= customerTotalPages;
+        }
+    }
+
+    async function viewCustomer(id) {
+        try {
+            const result = await api("customer_by_id", {
+                method: "POST",
+                body: {
+                    id
+                }
+            });
+
+            const customer = result.data || {};
+
+            setText(
+                "viewCustomerName",
+                customer.customer_name || "Customer"
+            );
+
+            setText(
+                "viewCustomerCode",
+                customer.customer_code || ""
+            );
+
+            const details = $("customerViewDetails");
+
+            if (details) {
+                details.innerHTML = `
+                    <div>
+                        <span>Phone</span>
+                        <b>${escapeHtml(customer.phone_number)}</b>
+                    </div>
+
+                    <div>
+                        <span>Car Plate</span>
+                        <b>${escapeHtml(customer.car_plate)}</b>
+                    </div>
+
+                    <div>
+                        <span>Vehicle</span>
+                        <b>${escapeHtml(
+                            `${customer.brand || ""} ${customer.car_model || ""}`.trim()
+                        )}</b>
+                    </div>
+
+                    <div>
+                        <span>Customer Type</span>
+                        <b>${escapeHtml(customer.customer_type)}</b>
+                    </div>
+
+                    <div>
+                        <span>Visit</span>
+                        <b>${escapeHtml(customer.visit)}</b>
+                    </div>
+
+                    <div>
+                        <span>Registration</span>
+                        <b>${escapeHtml(formatDate(customer.registration_date))}</b>
+                    </div>
+                `;
+            }
+
+            $("customerViewModal")?.classList.remove("hidden");
+            document.body.classList.add("modal-open");
+        } catch (error) {
+            alert(error.message || "Unable to load customer.");
+        }
+    }
+
+    function closeCustomerView() {
+        $("customerViewModal")?.classList.add("hidden");
+        document.body.classList.remove("modal-open");
+    }
+
+    $("closeCustomerView")?.addEventListener("click", closeCustomerView);
+
+    $("customerViewModal")?.addEventListener("click", (event) => {
+        if (event.target === $("customerViewModal")) {
+            closeCustomerView();
+        }
+    });
+
+    /* ======================================================
+       LOGOUT
+       ====================================================== */
+
+    const logoutModal = $("logoutModal");
+
+    function closeLogout() {
+        if (logoutBusy) {
+            return;
+        }
+
+        logoutModal?.classList.add("hidden");
+        document.body.classList.remove("modal-open");
+    }
+
+    $("logout")?.addEventListener("click", () => {
+        logoutModal?.classList.remove("hidden");
+        document.body.classList.add("modal-open");
+    });
+
+    $("closeLogout")?.addEventListener("click", closeLogout);
+    $("cancelLogout")?.addEventListener("click", closeLogout);
+
+    $("confirmLogout")?.addEventListener("click", async () => {
+        if (logoutBusy) {
+            return;
+        }
+
+        logoutBusy = true;
+
+        const confirmButton = $("confirmLogout");
+        const cancelButton = $("cancelLogout");
+        const closeButton = $("closeLogout");
+
+        if (confirmButton) {
+            confirmButton.disabled = true;
+            confirmButton.textContent = "Logging out...";
+        }
+
+        if (cancelButton) {
+            cancelButton.disabled = true;
+        }
+
+        if (closeButton) {
+            closeButton.disabled = true;
+        }
+
+        try {
+            await api("logout", {
+                method: "POST",
+                body: {}
+            });
+        } catch (error) {
+            console.error("[SP] Logout error:", error);
+        } finally {
+            sessionStorage.removeItem("sp_tinted_user");
+
+            logoutModal?.classList.add("hidden");
+            $("passwordModal")?.classList.add("hidden");
+            $("customerViewModal")?.classList.add("hidden");
+            document.body.classList.remove("modal-open");
+
+            $("app")?.classList.add("hidden");
+            $("loginScreen")?.classList.remove("hidden");
+
+            if ($("password")) {
+                $("password").value = "";
+            }
+
+            if ($("email")) {
+                $("email").value = "";
+            }
+
+            setActivePage("dashboard");
+
+            if (confirmButton) {
+                confirmButton.disabled = false;
+                confirmButton.textContent = "Logout";
+            }
+
+            if (cancelButton) {
+                cancelButton.disabled = false;
+            }
+
+            if (closeButton) {
+                closeButton.disabled = false;
+            }
+
+            logoutBusy = false;
+        }
+    });
+
+    /* ======================================================
+       SETTINGS / CHANGE PASSWORD
+       ====================================================== */
+
+    const settingsNav = $("settingsNav");
+    const passwordModal = $("passwordModal");
+
+    function closePassword() {
+        if (passwordBusy) {
+            return;
+        }
+
+        passwordModal?.classList.add("hidden");
+        document.body.classList.remove("modal-open");
+
+        $("passwordForm")?.reset();
+        setText("passwordError", "");
+        setText("passwordSuccess", "");
+    }
+
+    function openPassword() {
+        if (passwordBusy) {
+            return;
+        }
+
+        setText("passwordError", "");
+        setText("passwordSuccess", "");
+        $("passwordForm")?.reset();
+
+        passwordModal?.classList.remove("hidden");
+        document.body.classList.add("modal-open");
+    }
+
+    settingsNav?.addEventListener("click", openPassword);
+
+    settingsNav?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openPassword();
+        }
+    });
+
+    $("closePassword")?.addEventListener("click", closePassword);
+    $("cancelPassword")?.addEventListener("click", closePassword);
+
+    passwordModal?.addEventListener("click", (event) => {
+        if (event.target === passwordModal) {
+            closePassword();
+        }
+    });
+
+    document.querySelectorAll(".password-toggle").forEach((button) => {
+        button.addEventListener("click", () => {
+            const input = $(button.dataset.target);
+
+            if (!input) {
+                return;
+            }
+
+            const visible = input.type === "text";
+
+            input.type = visible ? "password" : "text";
+            button.textContent = visible ? "Show" : "Hide";
+        });
+    });
+
+    $("passwordForm")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (passwordBusy) {
+            return;
+        }
+
+        const currentPassword = $("currentPassword")?.value || "";
+        const newPassword = $("newPassword")?.value || "";
+        const confirmPassword = $("confirmPassword")?.value || "";
+
+        setText("passwordError", "");
+        setText("passwordSuccess", "");
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            setText("passwordError", "Please complete all password fields.");
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            setText(
+                "passwordError",
+                "New password must be at least 8 characters."
+            );
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            setText(
+                "passwordError",
+                "New password and confirmation do not match."
+            );
+            return;
+        }
+
+        if (currentPassword === newPassword) {
+            setText(
+                "passwordError",
+                "New password must be different from the current password."
+            );
+            return;
+        }
+
+        passwordBusy = true;
+
+        const saveButton = $("savePassword");
+
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = "Changing...";
+        }
+
+        try {
+            await api("change_password", {
+                method: "POST",
+                body: {
+                    currentPassword,
+                    newPassword
+                }
+            });
+
+            setText("passwordSuccess", "Password changed successfully.");
+
+            $("currentPassword").value = "";
+            $("newPassword").value = "";
+            $("confirmPassword").value = "";
+
+            setTimeout(() => {
+                if (!passwordBusy) {
+                    closePassword();
+                }
+            }, 900);
+        } catch (error) {
+            setText(
+                "passwordError",
+                error.message || "Unable to change password."
+            );
+        } finally {
+            passwordBusy = false;
+
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = "Change Password";
+            }
+        }
+    });
+
+    /* ======================================================
+       MODAL KEYBOARD SUPPORT
+       ====================================================== */
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") {
+            return;
+        }
+
+        if (!logoutModal?.classList.contains("hidden")) {
+            closeLogout();
+            return;
+        }
+
+        if (!passwordModal?.classList.contains("hidden")) {
+            closePassword();
+            return;
+        }
+
+        if (!$("customerViewModal")?.classList.contains("hidden")) {
+            closeCustomerView();
+        }
+    });
+
+    /* ======================================================
+       START APPLICATION
+       ====================================================== */
+
+    checkSession();
 })();
