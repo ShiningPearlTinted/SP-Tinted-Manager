@@ -42,7 +42,7 @@
 }
 
 .um-table {
-    min-width: 850px;
+    min-width: 1050px;
 }
 
 .um-table th {
@@ -72,6 +72,32 @@
     color: #ff8792;
 }
 
+.um-permission-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-width: 150px;
+}
+
+.um-permission-tag,
+.um-permission-none {
+    display: inline-flex;
+    align-items: center;
+    min-height: 23px;
+    padding: 0 7px;
+    border-radius: 6px;
+    background: #273243;
+    color: #cbd5e1;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.um-permission-none {
+    background: #35242a;
+    color: #ff9aa4;
+}
+
 .um-modal {
     position: relative;
     width: min(560px, 100%);
@@ -81,11 +107,10 @@
     border: 1px solid #343d4b;
     border-radius: 22px;
     background: linear-gradient(145deg, #202733, #171c25);
-    box-shadow:
-        0 30px 80px rgba(0, 0, 0, 0.55),
-        0 0 0 1px rgba(255, 255, 255, 0.025) inset;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .55),
+        0 0 0 1px rgba(255, 255, 255, .025) inset;
     text-align: left;
-    animation: modalIn 0.2s ease-out;
+    animation: modalIn .2s ease-out;
 }
 
 .um-modal h3 {
@@ -126,6 +151,33 @@
 .um-modal input:not([type="checkbox"]):focus,
 .um-modal select:focus {
     border-color: #6a7890;
+}
+
+.um-password-row {
+    display: flex;
+    align-items: stretch;
+    gap: 7px;
+}
+
+.um-password-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+.um-password-toggle {
+    min-width: 58px;
+    padding: 0 12px;
+    border: 1px solid #364052;
+    border-radius: 9px;
+    background: #202a39;
+    color: #dce3ed;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.um-password-toggle:hover {
+    background: #293548;
 }
 
 .um-permissions {
@@ -172,34 +224,8 @@
 }
 
 .um-modal .modal-danger:disabled {
-    opacity: 0.6;
+    opacity: .6;
     cursor: wait;
-}
-
-.um-password-field {
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
-}
-
-.um-password-field input {
-    flex: 1;
-    min-width: 0;
-}
-
-.um-password-toggle {
-    flex: 0 0 auto;
-    min-width: 58px;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    background: #202938;
-    color: #d7deea;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.um-password-toggle:hover {
-    background: #293548;
 }
 
 @media (max-width: 800px) {
