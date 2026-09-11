@@ -252,3 +252,82 @@
         padding: 20px 14px;
     }
 }
+
+/* =========================================================
+   Company Settings
+   ========================================================= */
+
+.um-company-card {
+    padding: 24px;
+}
+
+.um-company-form {
+    width: 100%;
+}
+
+.um-company-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.um-company-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.um-company-field label {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.um-company-field input,
+.um-company-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: #151b25;
+    color: #f8fafc;
+    padding: 11px 12px;
+    font: inherit;
+    outline: none;
+}
+
+.um-company-field input:focus,
+.um-company-field textarea:focus {
+    border-color: #64748b;
+}
+
+.um-company-field textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.um-company-full {
+    grid-column: 1 / -1;
+}
+
+.um-company-actions {
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+#navChangePassword {
+    cursor: pointer;
+}
+
+#settingsNav {
+    cursor: pointer;
+}
+
+@media (max-width: 800px) {
+    .um-company-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .um-company-full {
+        grid-column: auto;
+    }
+}
