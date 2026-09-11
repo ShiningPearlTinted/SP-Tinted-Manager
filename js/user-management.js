@@ -417,17 +417,38 @@
 
     let permissionsReady = false;
     let permissionsTimer = null;
+    let sessionUserKey = null;
+
+    function resetPermissionState() {
+        isAdmin = false;
+        permissionsReady = false;
+        currentPermissions = {
+            dashboard: false,
+            customer: false,
+            invoice: false,
+            user_management: false,
+            settings: true
+        };
+
+        document.querySelectorAll(".sidebar .nav").forEach((nav) => {
+            nav.classList.remove("active");
+        });
+
+        ["dashboardPage", "customerPage", "userManagementPage"].forEach((id) => {
+            $(id)?.classList.add("hidden");
+        });
+    }
 
     async function loadPermissions() {
         try {
             const result = await api("permissions");
 
-            isAdmin = !!result.data?.isAdmin;
-            currentPermissions = result.data?.permissions || {
-                dashboard: false,
-                customer: false,
-                invoice: false,
-                user_management: false,
+            isAdmin = result.data?.isAdmin === true;
+            currentPermissions = {
+                dashboard: result.data?.permissions?.dashboard === true,
+                customer: result.data?.permissions?.customer === true,
+                invoice: result.data?.permissions?.invoice === true,
+                user_management: result.data?.permissions?.user_management === true,
                 settings: true
             };
 
@@ -439,9 +460,83 @@
             }
 
             return true;
-        } catch (e) {
+        } catch (error) {
+            resetPermissionState();
             return false;
         }
+    }
+
+    async function checkCurrentSession() {
+        try {
+            const response = await fetch(`api/index.php?action=session&_=${Date.now()}`, {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-store",
+                headers: {
+                    Accept: "application/json",
+                    "Cache-Control": "no-cache"
+                }
+            });
+
+            const result = await response.json();
+            const user = result?.user;
+
+            if (!result?.success || !user) {
+                if (sessionUserKey !== null) {
+                    sessionUserKey = null;
+                    resetPermissionState();
+                }
+                return;
+            }
+
+            const nextUserKey = `${user.userId || ""}|${user.username || ""}|${user.role || ""}`;
+
+            if (nextUserKey !== sessionUserKey) {
+                sessionUserKey = nextUserKey;
+                resetPermissionState();
+                await loadPermissions();
+                refreshCurrentNavigation();
+                return;
+            }
+
+            if (!permissionsReady) {
+                await loadPermissions();
+                refreshCurrentNavigation();
+            }
+        } catch (_) {
+            // Keep the existing UI if a temporary session check fails.
+        }
+    }
+
+    function refreshCurrentNavigation() {
+        if (!permissionsReady) {
+            return;
+        }
+
+        applyPermissions();
+
+        const active = document.querySelector(".sidebar .nav.active");
+        const activeVisible = active && getComputedStyle(active).display !== "none";
+
+        if (activeVisible) {
+            return;
+        }
+
+        const preferred = [
+            ["Dashboard", "dashboard"],
+            ["Customer", "customer"],
+            ["Invoice", "invoice"],
+            ["User Management", "user_management"],
+            ["Settings", "settings"]
+        ];
+
+        const allowed = preferred.find(([, key]) => hasPermission(key));
+        if (!allowed) {
+            return;
+        }
+
+        const nav = navByText(allowed[0]);
+        nav?.click();
     }
 
     function startPermissionPolling() {
@@ -449,23 +544,19 @@
             return;
         }
 
-        loadPermissions();
+        checkCurrentSession();
 
-        permissionsTimer = window.setInterval(async () => {
-            const ready = await loadPermissions();
+        // Check the PHP session continuously so switching accounts in the
+        // same browser immediately reloads that user's permissions.
+        permissionsTimer = window.setInterval(checkCurrentSession, 500);
 
-            if (ready && permissionsReady) {
-                window.clearInterval(permissionsTimer);
-                permissionsTimer = null;
+        window.addEventListener("focus", checkCurrentSession);
+        window.addEventListener("pageshow", checkCurrentSession);
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) {
+                checkCurrentSession();
             }
-        }, 1000);
-
-        window.setTimeout(() => {
-            if (permissionsTimer) {
-                window.clearInterval(permissionsTimer);
-                permissionsTimer = null;
-            }
-        }, 30000);
+        });
     }
 
     function init() {
