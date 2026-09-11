@@ -660,31 +660,131 @@
 
 
 /* =========================================================
-   V10 - CUSTOMER VIEW + SAVE ALIGNMENT FIX
-   UI only. Existing functionality remains unchanged.
+   V11 - RESTORE CLEAN ORIGINAL ALIGNMENT
+   Visual correction only. No application functions changed.
    ========================================================= */
 
-.customer-view-name-row {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: max-content;
-    max-width: 100%;
-    margin: 0 auto !important;
-    gap: 9px;
-    line-height: 1;
+/* ---------- Company Details ---------- */
+
+#companySettingsPage .um-company-card {
+    display: block;
+    width: 100%;
+    padding: 24px;
 }
 
-.customer-view-name-row h3 {
-    margin: 0 !important;
+#companySettingsPage .um-company-form {
+    display: block;
+    width: 100%;
+}
+
+#companySettingsPage .um-company-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+    width: 100%;
+}
+
+#companySettingsPage .um-company-field {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    gap: 7px;
+}
+
+#companySettingsPage .um-company-field label {
+    display: block;
+    width: 100%;
+    margin: 0;
+    color: #dce3ed;
+    font-size: 12px;
+    font-weight: 600;
     line-height: 1.2;
 }
 
-.customer-view-name-row .copy-name-btn {
-    position: static !important;
+#companySettingsPage .um-company-field input,
+#companySettingsPage .um-company-field textarea {
+    display: block;
+    width: 100% !important;
+    min-width: 0;
+    box-sizing: border-box;
+    margin: 0;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: #151b25;
+    color: #f8fafc;
+    padding: 11px 12px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    outline: none;
+}
+
+#companySettingsPage .um-company-field input {
+    height: 44px;
+}
+
+#companySettingsPage .um-company-field textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+#companySettingsPage .um-company-field input:focus,
+#companySettingsPage .um-company-field textarea:focus {
+    border-color: #64748b;
+}
+
+#companySettingsPage .um-company-full {
+    grid-column: 1 / -1;
+}
+
+#companySettingsPage .um-company-actions {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100%;
+    margin-top: 20px;
+}
+
+#companySettingsPage #companySave {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 42px;
+    margin: 0 !important;
+    padding: 0 20px !important;
+    box-sizing: border-box;
+    text-align: center !important;
+    line-height: 1 !important;
+}
+
+/* ---------- Customer View copy control ---------- */
+
+#customerViewModal .customer-view-name-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: auto;
+    max-width: 100%;
+    min-height: 32px;
+    margin: 0 auto !important;
+    gap: 9px;
+}
+
+#customerViewModal .customer-view-name-row h3 {
+    display: block;
+    margin: 0 !important;
+    padding: 0;
+    line-height: 1.2;
+}
+
+#customerViewModal .customer-view-name-row .copy-name-btn {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    position: static !important;
     width: 30px !important;
     min-width: 30px !important;
     height: 30px !important;
@@ -697,18 +797,14 @@
     color: #91a4bf !important;
     font-size: 0 !important;
     line-height: 1 !important;
+    box-shadow: none !important;
 }
 
-.customer-view-name-row .copy-name-btn:hover {
-    border-color: #596a82 !important;
-    background: #222a36 !important;
-    color: #fff !important;
-}
-
-.customer-view-name-row .copy-name-btn svg {
+#customerViewModal .customer-view-name-row .copy-name-btn svg {
+    display: block !important;
     width: 15px !important;
     height: 15px !important;
-    display: block !important;
+    margin: 0 !important;
     fill: none !important;
     stroke: currentColor !important;
     stroke-width: 1.8 !important;
@@ -716,23 +812,32 @@
     stroke-linejoin: round !important;
 }
 
-.customer-view-value-row .copy-field-btn {
-    position: static !important;
+#customerViewModal .customer-view-value-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px;
+}
+
+#customerViewModal .customer-view-value-row .copy-field-btn {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    flex: 0 0 30px !important;
+    position: static !important;
     width: 30px !important;
     min-width: 30px !important;
     height: 30px !important;
+    flex: 0 0 30px !important;
     margin: 0 !important;
     padding: 0 !important;
+    box-shadow: none !important;
 }
 
-.customer-view-value-row .copy-field-btn svg {
+#customerViewModal .customer-view-value-row .copy-field-btn svg {
+    display: block !important;
     width: 15px !important;
     height: 15px !important;
-    display: block !important;
+    margin: 0 !important;
     fill: none !important;
     stroke: currentColor !important;
     stroke-width: 1.8 !important;
@@ -740,38 +845,97 @@
     stroke-linejoin: round !important;
 }
 
-.um-company-actions {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+/* ---------- Recent Customers header ---------- */
+
+#dashboardPage .recent.card {
     width: 100%;
+    min-width: 0;
 }
 
-#companySave {
-    width: 100% !important;
-    min-width: 0 !important;
-    height: 42px;
-    margin: 0 !important;
-    padding: 0 20px !important;
+#dashboardPage .recent-header {
     display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
-    text-align: center !important;
-    flex: 1 1 100% !important;
-    line-height: 1 !important;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
+    justify-content: space-between !important;
+    width: 100%;
+    gap: 16px;
 }
 
-@media (max-width: 520px) {
-    .customer-view-name-row {
-        gap: 7px;
+#dashboardPage .recent-header h3 {
+    margin: 0 !important;
+    flex: 1 1 auto;
+}
+
+#dashboardPage .recent-limit-control {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex: 0 0 auto;
+    gap: 7px !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap;
+}
+
+#dashboardPage .recent-limit-control label,
+#dashboardPage .recent-limit-control span {
+    display: inline-flex !important;
+    align-items: center !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 32px;
+    white-space: nowrap;
+}
+
+#dashboardPage .recent-limit-control select {
+    display: block !important;
+    width: 58px !important;
+    min-width: 58px !important;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 22px 0 9px !important;
+    box-sizing: border-box;
+}
+
+/* ---------- User Management table ---------- */
+
+#userManagementPage .um-table th,
+#userManagementPage .um-table td {
+    vertical-align: middle;
+}
+
+#userManagementPage .um-table td:last-child {
+    white-space: nowrap;
+}
+
+@media (max-width: 800px) {
+    #companySettingsPage .um-company-grid {
+        grid-template-columns: 1fr;
     }
 
-    .customer-view-name-row .copy-name-btn {
-        width: 28px !important;
-        min-width: 28px !important;
-        height: 28px !important;
-        flex-basis: 28px !important;
+    #companySettingsPage .um-company-full {
+        grid-column: auto;
+    }
+
+    #dashboardPage .recent-header {
+        align-items: center !important;
+        flex-direction: row !important;
+        flex-wrap: wrap;
+    }
+
+    #dashboardPage .recent-limit-control {
+        margin-left: auto !important;
+    }
+}
+
+@media (max-width: 420px) {
+    #dashboardPage .recent-header {
+        align-items: flex-start !important;
+        flex-direction: column !important;
+    }
+
+    #dashboardPage .recent-limit-control {
+        margin-left: 0 !important;
     }
 }
