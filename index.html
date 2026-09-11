@@ -5,408 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SP Tinted Manager</title>
     <link rel="stylesheet" href="css/style.css?v=20260911-customer-lock">
+    <link rel="stylesheet" href="css/user-management.css?v=20260911-user-management">
 </head>
 <body>
 
-    <!-- Login Screen -->
     <div id="loginScreen" class="login-screen">
         <div class="login-card">
             <div class="brand">
                 <div class="logo">SP</div>
-                <div>
-                    <b><i>SP</i> Tinted</b>
-                    <small>Management System</small>
-                </div>
+                <div><b><i>SP</i> Tinted</b><small>Management System</small></div>
             </div>
-
             <h1>Welcome Back</h1>
-
             <form id="loginForm">
                 <label for="email">Username</label>
-                <input
-                    id="email"
-                    type="text"
-                    autocomplete="username"
-                    placeholder="Enter your username"
-                    required
-                >
-
+                <input id="email" type="text" autocomplete="username" placeholder="Enter your username" required>
                 <label for="password">Password</label>
-                <div class="pw">
-                    <input
-                        id="password"
-                        type="password"
-                        autocomplete="current-password"
-                        placeholder="Enter your password"
-                        required
-                    >
-                    <button type="button" id="toggle">Show</button>
-                </div>
-
+                <div class="pw"><input id="password" type="password" autocomplete="current-password" placeholder="Enter your password" required><button type="button" id="toggle">Show</button></div>
                 <div id="error" class="error" aria-live="polite"></div>
-
-                <button id="login" class="primary" type="submit">
-                    Sign In
-                </button>
+                <button id="login" class="primary" type="submit">Sign In</button>
             </form>
-
             <footer>© 2026 Shining Pearl Tinted</footer>
         </div>
     </div>
 
-    <!-- Main Application -->
     <div id="app" class="app hidden">
         <aside class="sidebar">
-            <div class="sidebrand">
-                <span>SP</span> Tinted
-            </div>
-
+            <div class="sidebrand"><span>SP</span> Tinted</div>
             <nav>
-                <div id="navDashboard" class="nav active" data-page="dashboard">
-                    ▦ <span>Dashboard</span>
-                </div>
-
-                <div id="navCustomer" class="nav" data-page="customer">
-                    ♟ <span>Customer</span>
-                </div>
-
-                <div class="nav">
-                    ▣ <span>Invoice</span>
-                </div>
-
-                <div class="nav">
-                    ♙ <span>User Management</span>
-                </div>
-
-                <div
-                    id="settingsNav"
-                    class="nav"
-                    role="button"
-                    tabindex="0"
-                    data-action="settings"
-                >
-                    ⚙ <span>Settings</span>
-                </div>
+                <div id="navDashboard" class="nav active" data-page="dashboard">▦ <span>Dashboard</span></div>
+                <div id="navCustomer" class="nav" data-page="customer">♟ <span>Customer</span></div>
+                <div class="nav">▣ <span>Invoice</span></div>
+                <div class="nav">♙ <span>User Management</span></div>
+                <div id="settingsNav" class="nav" role="button" tabindex="0" data-action="settings">⚙ <span>Settings</span></div>
             </nav>
-
             <div class="sidefoot">SP Tinted Management</div>
         </aside>
 
         <main>
             <header>
                 <h2 id="pageTitle">Dashboard</h2>
-
                 <div class="headright">
-                    <button id="refresh" type="button" title="Refresh">
-                        ↻
-                    </button>
-
-                    <button
-                        id="logout"
-                        type="button"
-                        title="Logout"
-                        aria-label="Logout"
-                    >
-                        ⇥
-                    </button>
-
+                    <button id="refresh" type="button" title="Refresh">↻</button>
+                    <button id="logout" type="button" title="Logout" aria-label="Logout">⇥</button>
                     <div id="avatar">A</div>
-
-                    <div>
-                        <b id="pname">Admin</b>
-                        <small id="prole">Admin</small>
-                    </div>
+                    <div><b id="pname">Admin</b><small id="prole">Admin</small></div>
                 </div>
             </header>
 
-            <!-- Main Dashboard -->
             <section id="dashboardPage" class="content page-content">
                 <div class="stats">
-                    <div class="card">
-                        <div class="icon">♧</div>
-                        <span>Total Customers</span>
-                        <strong id="totalCustomers">0</strong>
-                    </div>
-
-                    <div class="card">
-                        <div class="icon">♧</div>
-                        <span>Today's Registration</span>
-                        <strong id="todayRegistration">0</strong>
-                    </div>
-
-                    <div class="card">
-                        <div class="icon">▱</div>
-                        <span>Total Vehicles</span>
-                        <strong id="totalVehicles">0</strong>
-                    </div>
-
-                    <div class="card">
-                        <div class="icon">▣</div>
-                        <span>Monthly Registration</span>
-                        <strong id="monthlyRegistration">0</strong>
-                    </div>
+                    <div class="card"><div class="icon">♧</div><span>Total Customers</span><strong id="totalCustomers">0</strong></div>
+                    <div class="card"><div class="icon">♧</div><span>Today's Registration</span><strong id="todayRegistration">0</strong></div>
+                    <div class="card"><div class="icon">▱</div><span>Total Vehicles</span><strong id="totalVehicles">0</strong></div>
+                    <div class="card"><div class="icon">▣</div><span>Monthly Registration</span><strong id="monthlyRegistration">0</strong></div>
                 </div>
-
                 <div class="recent card">
                     <div class="recent-header">
                         <h3>Recent Customers</h3>
-                        <div class="recent-limit-control">
-                            <label for="recentLimit">Show</label>
-                            <select id="recentLimit">
-                                <option value="5" selected>5</option>
-                                <option value="10">10</option>
-                            </select>
-                            <span>Customers</span>
-                        </div>
+                        <div class="recent-limit-control"><label for="recentLimit">Show</label><select id="recentLimit"><option value="5" selected>5</option><option value="10">10</option></select><span>Customers</span></div>
                     </div>
-
-                    <div class="tablewrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Name</th>
-                                    <th>Vehicle</th>
-                                    <th>Phone</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recent">
-                                <tr>
-                                    <td colspan="5">Loading...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <div class="tablewrap"><table><thead><tr><th>ID</th><th>Name</th><th>Vehicle</th><th>Phone</th><th>Date</th></tr></thead><tbody id="recent"><tr><td colspan="5">Loading...</td></tr></tbody></table></div>
                 </div>
             </section>
 
-            <!-- Customer Dashboard -->
             <section id="customerPage" class="content page-content hidden">
-                <div class="customer-toolbar">
-                    <div>
-                        <h3>Customer Dashboard</h3>
-                        <p>Manage and review customer registration records.</p>
-                    </div>
-
-                    <button id="customerRefresh" class="customer-action" type="button">
-                        ↻ Refresh
-                    </button>
-                </div>
-
+                <div class="customer-toolbar"><div><h3>Customer Dashboard</h3><p>Manage and review customer registration records.</p></div><button id="customerRefresh" class="customer-action" type="button">↻ Refresh</button></div>
                 <div class="stats customer-stats">
-                    <div class="card">
-                        <div class="icon">♟</div>
-                        <span>Total Customers</span>
-                        <strong id="customerTotal">0</strong>
-                    </div>
-
-                    <div class="card">
-                        <div class="icon">＋</div>
-                        <span>New Customers</span>
-                        <strong id="customerNew">0</strong>
-                    </div>
-
-                    <div class="card">
-                        <div class="icon">↻</div>
-                        <span>Returning Customers</span>
-                        <strong id="customerReturning">0</strong>
-                    </div>
-
-                    <div class="card">
-                        <div class="icon">▣</div>
-                        <span>Total Visits</span>
-                        <strong id="customerVisits">0</strong>
-                    </div>
+                    <div class="card"><div class="icon">♟</div><span>Total Customers</span><strong id="customerTotal">0</strong></div>
+                    <div class="card"><div class="icon">＋</div><span>New Customers</span><strong id="customerNew">0</strong></div>
+                    <div class="card"><div class="icon">↻</div><span>Returning Customers</span><strong id="customerReturning">0</strong></div>
+                    <div class="card"><div class="icon">▣</div><span>Total Visits</span><strong id="customerVisits">0</strong></div>
                 </div>
-
                 <div class="customer-panel card">
-                    <div class="customer-list-head">
-                        <div>
-                            <h3>Customer List</h3>
-                            <small id="customerResultInfo">Loading...</small>
-                        </div>
-
-                        <div class="customer-search">
-                            <input
-                                id="customerSearch"
-                                type="search"
-                                placeholder="Search ID, name, phone, plate, brand..."
-                                autocomplete="off"
-                            >
-                            <button id="customerSearchBtn" type="button">
-                                Search
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="tablewrap">
-                        <table class="customer-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Customer</th>
-                                    <th>Phone</th>
-                                    <th>Vehicle</th>
-                                    <th>Plate</th>
-                                    <th>Type</th>
-                                    <th>Visit</th>
-                                    <th>Date</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="customerRows">
-                                <tr>
-                                    <td colspan="9">Loading...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="customer-pagination">
-                        <button id="customerPrev" type="button">
-                            ← Previous
-                        </button>
-
-                        <span id="customerPageInfo">Page 1</span>
-
-                        <button id="customerNext" type="button">
-                            Next →
-                        </button>
-                    </div>
+                    <div class="customer-list-head"><div><h3>Customer List</h3><small id="customerResultInfo">Loading...</small></div><div class="customer-search"><input id="customerSearch" type="search" placeholder="Search ID, name, phone, plate, brand..." autocomplete="off"><button id="customerSearchBtn" type="button">Search</button></div></div>
+                    <div class="tablewrap"><table class="customer-table"><thead><tr><th>ID</th><th>Customer</th><th>Phone</th><th>Vehicle</th><th>Plate</th><th>Type</th><th>Visit</th><th>Date</th><th>Action</th></tr></thead><tbody id="customerRows"><tr><td colspan="9">Loading...</td></tr></tbody></table></div>
+                    <div class="customer-pagination"><button id="customerPrev" type="button">← Previous</button><span id="customerPageInfo">Page 1</span><button id="customerNext" type="button">Next →</button></div>
                 </div>
             </section>
         </main>
     </div>
 
-    <!-- Logout Modal -->
-    <div
-        id="logoutModal"
-        class="modal-overlay hidden"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="logoutTitle"
-    >
-        <div class="logout-modal">
-            <button id="closeLogout" class="modal-close" type="button" aria-label="Close">
-                ×
-            </button>
-
-            <div class="logout-icon">⇥</div>
-            <h3 id="logoutTitle">Logout</h3>
-            <p>Are you sure you want to logout from the system?</p>
-
-            <div class="modal-actions">
-                <button id="cancelLogout" class="modal-cancel" type="button">
-                    Cancel
-                </button>
-                <button id="confirmLogout" class="modal-danger" type="button">
-                    Logout
-                </button>
-            </div>
-        </div>
+    <div id="logoutModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+        <div class="logout-modal"><button id="closeLogout" class="modal-close" type="button" aria-label="Close">×</button><div class="logout-icon">⇥</div><h3 id="logoutTitle">Logout</h3><p>Are you sure you want to logout from the system?</p><div class="modal-actions"><button id="cancelLogout" class="modal-cancel" type="button">Cancel</button><button id="confirmLogout" class="modal-danger" type="button">Logout</button></div></div>
     </div>
 
-    <!-- Change Password Modal -->
-    <div
-        id="passwordModal"
-        class="modal-overlay hidden"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="passwordTitle"
-    >
+    <div id="passwordModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="passwordTitle">
         <div class="password-modal">
-            <button id="closePassword" class="modal-close" type="button" aria-label="Close">
-                ×
-            </button>
-
-            <div class="password-icon">🔒</div>
-            <h3 id="passwordTitle">Change Password</h3>
-            <p>Update your account password securely.</p>
-
+            <button id="closePassword" class="modal-close" type="button" aria-label="Close">×</button><div class="password-icon">🔒</div><h3 id="passwordTitle">Change Password</h3><p>Update your account password securely.</p>
             <form id="passwordForm" autocomplete="off">
-                <label for="currentPassword">Current Password</label>
-                <div class="password-field">
-                    <input id="currentPassword" type="password" autocomplete="current-password" required>
-                    <button type="button" class="password-toggle" data-target="currentPassword">
-                        Show
-                    </button>
-                </div>
-
-                <label for="newPassword">New Password</label>
-                <div class="password-field">
-                    <input id="newPassword" type="password" autocomplete="new-password" minlength="8" required>
-                    <button type="button" class="password-toggle" data-target="newPassword">
-                        Show
-                    </button>
-                </div>
-
-                <label for="confirmPassword">Confirm New Password</label>
-                <div class="password-field">
-                    <input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
-                    <button type="button" class="password-toggle" data-target="confirmPassword">
-                        Show
-                    </button>
-                </div>
-
-                <div id="passwordError" class="error password-error" aria-live="polite"></div>
-                <div id="passwordSuccess" class="success-message" aria-live="polite"></div>
-
-                <div class="modal-actions">
-                    <button id="cancelPassword" class="modal-cancel" type="button">
-                        Cancel
-                    </button>
-                    <button id="savePassword" class="modal-danger" type="submit">
-                        Change Password
-                    </button>
-                </div>
+                <label for="currentPassword">Current Password</label><div class="password-field"><input id="currentPassword" type="password" autocomplete="current-password" required><button type="button" class="password-toggle" data-target="currentPassword">Show</button></div>
+                <label for="newPassword">New Password</label><div class="password-field"><input id="newPassword" type="password" autocomplete="new-password" minlength="8" required><button type="button" class="password-toggle" data-target="newPassword">Show</button></div>
+                <label for="confirmPassword">Confirm New Password</label><div class="password-field"><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required><button type="button" class="password-toggle" data-target="confirmPassword">Show</button></div>
+                <div id="passwordError" class="error password-error" aria-live="polite"></div><div id="passwordSuccess" class="success-message" aria-live="polite"></div>
+                <div class="modal-actions"><button id="cancelPassword" class="modal-cancel" type="button">Cancel</button><button id="savePassword" class="modal-danger" type="submit">Change Password</button></div>
             </form>
         </div>
     </div>
 
-    <!-- Customer View Modal -->
-    <div
-        id="customerViewModal"
-        class="modal-overlay hidden"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="viewCustomerName"
-    >
+    <div id="customerViewModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="viewCustomerName">
         <div class="customer-view-modal">
-            <button id="closeCustomerView" class="modal-close" type="button" aria-label="Close">
-                ×
-            </button>
-
-            <div class="customer-view-icon">♟</div>
-
-            <div class="customer-view-name-row">
-                <h3 id="viewCustomerName">Customer</h3>
-                <button
-                    id="copyCustomerName"
-                    class="copy-btn copy-name-btn"
-                    type="button"
-                    aria-label="Copy customer name"
-                    title="Copy Name"
-                >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="9" y="9" width="11" height="11" rx="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                </button>
-            </div>
-
-            <p id="viewCustomerCode">Customer ID</p>
-
-            <div id="customerViewDetails" class="customer-view-details"></div>
+            <button id="closeCustomerView" class="modal-close" type="button" aria-label="Close">×</button><div class="customer-view-icon">♟</div>
+            <div class="customer-view-name-row"><h3 id="viewCustomerName">Customer</h3><button id="copyCustomerName" class="copy-btn copy-name-btn" type="button" aria-label="Copy customer name" title="Copy Name"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></div>
+            <p id="viewCustomerCode">Customer ID</p><div id="customerViewDetails" class="customer-view-details"></div>
         </div>
     </div>
 
-    <!-- Global Loading -->
-    <div id="loading" class="loading hidden">
-        <div class="loader"></div>
-        <span>Loading...</span>
-    </div>
+    <div id="loading" class="loading hidden"><div class="loader"></div><span>Loading...</span></div>
 
     <script src="js/app.js?v=20260911-customer-lock"></script>
+    <script src="js/user-management.js?v=20260911-user-management"></script>
 </body>
 </html>
