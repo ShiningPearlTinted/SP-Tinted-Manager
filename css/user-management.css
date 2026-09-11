@@ -331,3 +331,102 @@
         grid-column: auto;
     }
 }
+
+
+/* Sidebar icon alignment for Change Password. */
+.sidebar .nav .nav-icon {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Global confirmation dialog used before save/update operations. */
+.um-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(5px);
+}
+
+.um-confirm-overlay.hidden {
+    display: none;
+}
+
+.um-confirm-modal {
+    width: min(420px, 100%);
+    padding: 28px;
+    border: 1px solid #344155;
+    border-radius: 16px;
+    background: #1b2330;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+    text-align: center;
+}
+
+.um-confirm-icon {
+    width: 42px;
+    height: 42px;
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(226, 0, 26, 0.14);
+    color: #e2001a;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.um-confirm-modal h3 {
+    margin: 0 0 8px;
+    color: #f4f7fb;
+    font-size: 20px;
+}
+
+.um-confirm-modal p {
+    margin: 0;
+    color: #aab7ca;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+.um-confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.um-confirm-actions button {
+    min-height: 42px;
+    border: 1px solid #3b4759;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.um-confirm-no {
+    background: #242e3c;
+    color: #e7edf6;
+}
+
+.um-confirm-yes {
+    border-color: #e2001a !important;
+    background: #e2001a;
+    color: #ffffff;
+}
+
+@media (max-width: 520px) {
+    .um-confirm-modal {
+        padding: 22px;
+    }
+}
