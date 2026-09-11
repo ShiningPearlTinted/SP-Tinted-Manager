@@ -372,13 +372,27 @@
                 return;
             }
 
-            const viewButton = row.querySelector(".view-btn");
+            const buttons = Array.from(row.querySelectorAll("button"));
+
+            const viewButton =
+                row.querySelector(".view-btn[data-id]") ||
+                row.querySelector(".view-btn") ||
+                buttons.find((button) =>
+                    button.textContent.trim().toLowerCase() === "view"
+                );
 
             if (!viewButton) {
                 return;
             }
 
-            const id = viewButton.dataset.id;
+            const firstCell = row.querySelector("td");
+
+            const id =
+                viewButton.dataset.id ||
+                viewButton.dataset.customerId ||
+                viewButton.getAttribute("data-id") ||
+                firstCell?.textContent.trim() ||
+                "";
 
             if (!id) {
                 return;
@@ -406,8 +420,7 @@
             if (!actionCell.querySelector(".customer-delete-btn")) {
                 const deleteButton = document.createElement("button");
 
-                deleteButton.className =
-                    "view-btn customer-delete-btn";
+                deleteButton.className = "view-btn customer-delete-btn";
                 deleteButton.type = "button";
                 deleteButton.dataset.customerId = id;
                 deleteButton.textContent = "Delete";
@@ -481,7 +494,7 @@
 
     function ensureStylesheet() {
         const href =
-            "css/customer-management.css?v=20260912-customer-edit-delete-v3";
+            "css/customer-management.css?v=20260912-customer-edit-delete-v4";
 
         if (
             document.querySelector(
