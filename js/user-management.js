@@ -418,6 +418,8 @@
     let permissionsReady = false;
     let permissionsTimer = null;
     let sessionUserKey = null;
+    let sessionCheckInProgress = false;
+    let loginWatchTimer = null;
 
     function resetPermissionState() {
         isAdmin = false;
@@ -466,7 +468,13 @@
         }
     }
 
-    async function checkCurrentSession() {
+    async function checkCurrentSession(force = false) {
+        if (sessionCheckInProgress && !force) {
+            return;
+        }
+
+        sessionCheckInProgress = true;
+
         try {
             const response = await fetch(`api/index.php?action=session&_=${Date.now()}`, {
                 method: "GET",
@@ -474,7 +482,7 @@
                 cache: "no-store",
                 headers: {
                     Accept: "application/json",
-                    "Cache-Control": "no-cache"
+                    "Cache-Control": "no-cache, no-store"
                 }
             });
 
@@ -482,7 +490,7 @@
             const user = result?.user;
 
             if (!result?.success || !user) {
-                if (sessionUserKey !== null) {
+                if (sessionUserKey !== null || permissionsReady) {
                     sessionUserKey = null;
                     resetPermissionState();
                 }
@@ -491,21 +499,83 @@
 
             const nextUserKey = `${user.userId || ""}|${user.username || ""}|${user.role || ""}`;
 
-            if (nextUserKey !== sessionUserKey) {
+            if (force || nextUserKey !== sessionUserKey) {
                 sessionUserKey = nextUserKey;
                 resetPermissionState();
-                await loadPermissions();
-                refreshCurrentNavigation();
+
+                const loaded = await loadPermissions();
+
+                if (loaded) {
+                    refreshCurrentNavigation();
+                }
+
                 return;
             }
 
             if (!permissionsReady) {
-                await loadPermissions();
-                refreshCurrentNavigation();
+                const loaded = await loadPermissions();
+
+                if (loaded) {
+                    refreshCurrentNavigation();
+                }
             }
         } catch (_) {
             // Keep the existing UI if a temporary session check fails.
+        } finally {
+            sessionCheckInProgress = false;
         }
+    }
+
+    function watchLoginTransition() {
+        if (loginWatchTimer) {
+            window.clearInterval(loginWatchTimer);
+        }
+
+        let attempts = 0;
+        loginWatchTimer = window.setInterval(async () => {
+            attempts += 1;
+            await checkCurrentSession(true);
+
+            const loginScreen = $("loginScreen");
+            const appShell = $("appShell");
+
+            if (loginScreen?.classList.contains("hidden") && !appShell?.classList.contains("hidden")) {
+                window.clearInterval(loginWatchTimer);
+                loginWatchTimer = null;
+            }
+
+            if (attempts >= 40) {
+                window.clearInterval(loginWatchTimer);
+                loginWatchTimer = null;
+            }
+        }, 150);
+    }
+
+    function bindLoginLogoutRefresh() {
+        const loginForm = $("loginForm");
+
+        loginForm?.addEventListener("submit", () => {
+            // app.js creates the PHP session. Start checking immediately after
+            // the login request so the new user's permissions replace the
+            // previous user's permissions without a manual browser refresh.
+            window.setTimeout(() => {
+                watchLoginTransition();
+            }, 50);
+        }, true);
+
+        const logoutButton = $("logout");
+        logoutButton?.addEventListener("click", () => {
+            window.setTimeout(() => {
+                checkCurrentSession(true);
+            }, 100);
+        }, true);
+
+        const confirmLogout = $("confirmLogout");
+        confirmLogout?.addEventListener("click", () => {
+            window.setTimeout(() => {
+                checkCurrentSession(true);
+            }, 100);
+        }, true);
     }
 
     function refreshCurrentNavigation() {
@@ -575,6 +645,7 @@
         }, true);
 
         bindOtherNavigation();
+        bindLoginLogoutRefresh();
         startPermissionPolling();
     }
 
