@@ -46,6 +46,18 @@
         );
     }
 
+    function hasPermission(name) {
+        if (name === "settings") {
+            return true;
+        }
+
+        if (isAdmin) {
+            return true;
+        }
+
+        return currentPermissions[name] === true;
+    }
+
     function applyPermissions() {
         const map = {
             dashboard: navByText("Dashboard"),
@@ -59,12 +71,25 @@
                 return;
             }
 
-            const visible = isAdmin || !!currentPermissions[key];
+            const visible = hasPermission(key);
             el.style.display = visible ? "flex" : "none";
         });
 
-        if (map.user_management) {
-            map.user_management.style.display = isAdmin ? "flex" : "none";
+        const settings = navByText("Settings");
+        if (settings) {
+            settings.style.display = "flex";
+        }
+
+        if (!hasPermission("dashboard")) {
+            $("dashboardPage")?.classList.add("hidden");
+        }
+
+        if (!hasPermission("customer")) {
+            $("customerPage")?.classList.add("hidden");
+        }
+
+        if (!hasPermission("user_management")) {
+            $("userManagementPage")?.classList.add("hidden");
         }
     }
 
@@ -205,11 +230,17 @@
                 return;
             }
 
-            nav.addEventListener("click", () => {
+            nav.addEventListener("click", (event) => {
+                const key = name.toLowerCase().replace(" ", "_");
+
+                if (!hasPermission(key)) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    return;
+                }
+
                 syncNormalPageNavigation(name);
 
-                // app.js also manages the active class. Re-apply the correct
-                // state after its click handler has finished.
                 window.setTimeout(() => {
                     syncNormalPageNavigation(name);
                 }, 0);
@@ -384,23 +415,76 @@
         } finally { btn.disabled = false; btn.textContent = "Save User"; }
     }
 
-    async function init() {
+    let permissionsReady = false;
+    let permissionsTimer = null;
+
+    async function loadPermissions() {
         try {
             const result = await api("permissions");
+
             isAdmin = !!result.data?.isAdmin;
-            currentPermissions = result.data?.permissions || currentPermissions;
+            currentPermissions = result.data?.permissions || {
+                dashboard: false,
+                customer: false,
+                invoice: false,
+                user_management: false,
+                settings: true
+            };
+
+            permissionsReady = true;
             applyPermissions();
-            const userNav = navByText("User Management");
-            userNav?.addEventListener("click", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                showUserPage();
-            }, true);
-            bindOtherNavigation();
-            if (isAdmin) ensurePage();
+
+            if (isAdmin) {
+                ensurePage();
+            }
+
+            return true;
         } catch (e) {
-            console.error("[SP] User permissions error:", e);
+            return false;
         }
+    }
+
+    function startPermissionPolling() {
+        if (permissionsTimer) {
+            return;
+        }
+
+        loadPermissions();
+
+        permissionsTimer = window.setInterval(async () => {
+            const ready = await loadPermissions();
+
+            if (ready && permissionsReady) {
+                window.clearInterval(permissionsTimer);
+                permissionsTimer = null;
+            }
+        }, 1000);
+
+        window.setTimeout(() => {
+            if (permissionsTimer) {
+                window.clearInterval(permissionsTimer);
+                permissionsTimer = null;
+            }
+        }, 30000);
+    }
+
+    function init() {
+        const userNav = navByText("User Management");
+
+        userNav?.addEventListener("click", (event) => {
+            if (!isAdmin) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                return;
+            }
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            showUserPage();
+        }, true);
+
+        bindOtherNavigation();
+        startPermissionPolling();
     }
 
     init();
