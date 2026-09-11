@@ -324,9 +324,40 @@ header h2 {
     padding: 25px;
 }
 
-.recent h3 {
+.recent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 14px;
+}
+
+.recent-header h3 {
     font-size: 18px;
-    margin: 0 0 14px;
+    margin: 0;
+}
+
+.recent-limit-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #91a4bf;
+    font-size: 13px;
+}
+
+.recent-limit-control select {
+    height: 36px;
+    min-width: 70px;
+    padding: 0 10px;
+    border: 1px solid #364052;
+    border-radius: 8px;
+    background: #151a23;
+    color: #fff;
+    outline: none;
+}
+
+.recent-limit-control select:focus {
+    border-color: #6a7890;
 }
 
 .tablewrap {
@@ -888,6 +919,12 @@ td {
 }
 
 @media (max-width: 700px) {
+    .recent-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+
     .sidebar {
         width: 70px;
         min-width: 70px;
