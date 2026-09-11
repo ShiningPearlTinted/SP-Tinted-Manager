@@ -184,7 +184,7 @@
                     <td>${esc(u.role)}</td><td><span class="um-status ${String(u.status).toLowerCase()}">${esc(u.status)}</span></td>
                     <td>${esc(u.last_login_at || "Never")}</td><td><button class="view-btn um-edit" data-id="${esc(u.id)}" type="button">Edit</button></td>
                 </tr>`).join("") : '<tr><td colspan="7">No users found.</td></tr>';
-            body.querySelectorAll(".um-edit").forEach((b) => b.addEventListener("click", () => openUserModal(Number(b.dataset.id))));
+            body.querySelectorAll(".um-edit").forEach((b) => b.addEventListener("click", async () => openUserModal(Number(b.dataset.id))));
             $("umResultInfo").textContent = `${users.length} user${users.length === 1 ? "" : "s"}`;
         } catch (e) {
             body.innerHTML = `<tr><td colspan="7">${esc(e.message)}</td></tr>`;
@@ -192,16 +192,24 @@
         }
     }
 
-    function setPermissionInputs(p) {
-        $("permDashboard").checked = !!p.dashboard;
-        $("permCustomer").checked = !!p.customer;
-        $("permInvoice").checked = !!p.invoice;
-        $("permUserManagement").checked = !!p.user_management;
+    function setPermissionInputs(p = {}) {
+        $("permDashboard").checked = Boolean(p.dashboard);
+        $("permCustomer").checked = Boolean(p.customer);
+        $("permInvoice").checked = Boolean(p.invoice);
+        $("permUserManagement").checked = Boolean(p.user_management);
         $("permSettings").checked = true;
     }
 
-    function openUserModal(id = 0) {
-        const user = id ? users.find((u) => Number(u.id) === Number(id)) : null;
+    async function openUserModal(id = 0) {
+        const user = id
+            ? users.find((u) => Number(u.id) === Number(id))
+            : null;
+
+        if (id && !user) {
+            alert("User data not found. Please refresh the User Management list.");
+            return;
+        }
+
         $("userModalTitle").textContent = user ? "Edit User" : "Add User";
         $("umUserDbId").value = user?.id || "";
         $("umUserId").value = user?.user_id || "";
@@ -210,13 +218,37 @@
         $("umPassword").value = "";
         $("umPassword").type = "password";
         $("umPassword").required = !user;
-        $("umPasswordHint").textContent = user ? "Enter a new password or leave blank to keep current password" : "Required for new user";
+        $("umPasswordHint").textContent = user
+            ? "Enter a new password or leave blank to keep current password"
+            : "Required for new user";
         $("umPasswordToggle").textContent = "Show";
         $("umPasswordToggle").setAttribute("aria-label", "Show password");
         $("umRole").value = user?.role || "User";
         $("umStatus").value = user?.status || "Active";
-        setPermissionInputs(user?.permissions || {dashboard:false, customer:false, invoice:false, user_management:false});
         $("umError").textContent = "";
+
+        setPermissionInputs({
+            dashboard: false,
+            customer: false,
+            invoice: false,
+            user_management: false,
+            settings: true
+        });
+
+        if (user) {
+            try {
+                const result = await api("get_user_permissions", {
+                    method: "POST",
+                    body: { id: user.id }
+                });
+
+                setPermissionInputs(result.data?.permissions || user.permissions || {});
+            } catch (error) {
+                $("umError").textContent = error.message || "Unable to load user permissions.";
+                return;
+            }
+        }
+
         $("userModal").classList.remove("hidden");
         document.body.classList.add("modal-open");
     }
