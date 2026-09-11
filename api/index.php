@@ -76,7 +76,13 @@ function clean(string $value): string
 
 function normPhone(string $value): string
 {
-    return preg_replace('/\s+/', '', trim($value)) ?? '';
+    $phone = preg_replace('/\s+/', '', trim($value)) ?? '';
+
+    if ($phone !== '' && preg_match('/^\d+$/', $phone) === 1 && $phone[0] !== '0') {
+        $phone = '0' . $phone;
+    }
+
+    return $phone;
 }
 
 function normPlate(string $value): string
@@ -280,6 +286,11 @@ try {
         case 'dashboard':
             requireLogin();
 
+            $recentLimit = (int)($input['recentLimit'] ?? 5);
+            $recentLimit = in_array($recentLimit, [5, 10], true)
+                ? $recentLimit
+                : 5;
+
             $totalCustomers = (int)$pdo->query(
                 "SELECT COUNT(DISTINCT CONCAT(
                     COALESCE(NULLIF(REPLACE(TRIM(phone_number), ' ', ''), ''), ''),
@@ -321,7 +332,7 @@ try {
                     registration_date
                  FROM customer_database
                  ORDER BY registration_date DESC, id DESC
-                 LIMIT 10'
+                 LIMIT ' . $recentLimit
             );
 
             $recent = [];
@@ -333,7 +344,7 @@ try {
                     'vehicle' => trim(
                         (string)$row['brand'] . ' ' . (string)$row['car_model']
                     ),
-                    'phone' => $row['phone_number'],
+                    'phone' => normPhone((string)$row['phone_number']),
                     'date' => $row['registration_date'],
                 ];
             }
@@ -460,7 +471,7 @@ try {
                     'id' => $row['id'],
                     'customerCode' => $row['customer_code'],
                     'name' => $row['customer_name'],
-                    'phone' => $row['phone_number'],
+                    'phone' => normPhone((string)$row['phone_number']),
                     'vehicle' => trim(
                         (string)$row['brand'] . ' ' . (string)$row['car_model']
                     ),
@@ -533,6 +544,8 @@ try {
                 ], 404);
             }
 
+            $customer['phone_number'] = normPhone((string)$customer['phone_number']);
+
             respond([
                 'success' => true,
                 'data' => $customer
@@ -601,7 +614,7 @@ try {
                     'customer' => [
                         'id' => $customer['customer_code'],
                         'name' => $customer['customer_name'],
-                        'phone' => $customer['phone_number'],
+                        'phone' => normPhone((string)$customer['phone_number']),
                         'plate' => $customer['car_plate'],
                         'brand' => $customer['brand'],
                         'model' => $customer['car_model'],
