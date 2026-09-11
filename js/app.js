@@ -13,6 +13,7 @@
     let customerPage = 1;
     let customerSearch = "";
     let customerTotalPages = 1;
+    let recentLimit = 5;
 
     function setText(id, value) {
         const element = $(id);
@@ -217,7 +218,12 @@
         showLoading(true, "Loading Dashboard...");
 
         try {
-            const result = await api("dashboard");
+            const result = await api("dashboard", {
+                method: "POST",
+                body: {
+                    recentLimit
+                }
+            });
             const data = result.data || {};
 
             setText("totalCustomers", data.totalCustomers || 0);
@@ -282,6 +288,11 @@
     $("navCustomer")?.addEventListener("click", () => {
         setActivePage("customer");
         loadCustomers(1);
+    });
+
+    $("recentLimit")?.addEventListener("change", () => {
+        recentLimit = Number($("recentLimit").value) === 10 ? 10 : 5;
+        loadDashboard();
     });
 
     $("refresh")?.addEventListener("click", () => {
