@@ -365,7 +365,13 @@
     }
 
     function addActionButtons() {
-        const rows = document.querySelectorAll("#customerRows tr");
+        const tableBody = $("customerRows");
+
+        if (!tableBody) {
+            return;
+        }
+
+        const rows = tableBody.querySelectorAll("tr");
 
         rows.forEach((row) => {
             if (row.dataset.customerActionsAdded === "1") {
@@ -440,37 +446,80 @@
         tableBody.dataset.actionDelegation = "1";
 
         tableBody.addEventListener("click", (event) => {
-            const editButton =
-                event.target.closest(".customer-edit-btn");
+            const editButton = event.target.closest(
+                ".customer-edit-btn"
+            );
+
+            const deleteButton = event.target.closest(
+                ".customer-delete-btn"
+            );
+
+            if (!editButton && !deleteButton) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
 
             if (editButton) {
-                event.preventDefault();
-                event.stopPropagation();
-
                 openEditCustomer(editButton.dataset.customerId);
                 return;
             }
 
-            const deleteButton =
-                event.target.closest(".customer-delete-btn");
+            const row = deleteButton.closest("tr");
+            const code =
+                row?.children[0]?.textContent.trim() || "Customer";
+            const name =
+                row?.children[1]?.textContent.trim() || "Customer";
 
-            if (deleteButton) {
-                event.preventDefault();
-                event.stopPropagation();
-
-                const row = deleteButton.closest("tr");
-                const code =
-                    row?.children[0]?.textContent.trim() || "Customer";
-                const name =
-                    row?.children[1]?.textContent.trim() || "Customer";
-
-                deleteCustomer(
-                    deleteButton.dataset.customerId,
-                    code,
-                    name
-                );
-            }
+            deleteCustomer(
+                deleteButton.dataset.customerId,
+                code,
+                name
+            );
         });
+    }
+
+    function bindGlobalCustomerActions() {
+        if (document.documentElement.dataset.customerActionsBound === "1") {
+            return;
+        }
+
+        document.documentElement.dataset.customerActionsBound = "1";
+
+        document.addEventListener("click", (event) => {
+            const editButton = event.target.closest(
+                ".customer-edit-btn"
+            );
+
+            const deleteButton = event.target.closest(
+                ".customer-delete-btn"
+            );
+
+            if (!editButton && !deleteButton) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (editButton) {
+                openEditCustomer(editButton.dataset.customerId);
+                return;
+            }
+
+            const row = deleteButton.closest("tr");
+            const code =
+                row?.children[0]?.textContent.trim() || "Customer";
+            const name =
+                row?.children[1]?.textContent.trim() || "Customer";
+
+            deleteCustomer(
+                deleteButton.dataset.customerId,
+                code,
+                name
+            );
+        }, true);
     }
 
     function observeCustomerRows() {
@@ -494,28 +543,33 @@
 
     function ensureStylesheet() {
         const href =
-            "css/customer-management.css?v=20260912-customer-edit-delete-v4";
+            "css/customer-management.css?v=20260912-customer-edit-delete-v6";
 
-        if (
-            document.querySelector(
-                'link[data-sp-customer-management="1"]'
-            )
-        ) {
-            return;
+        let link = document.querySelector(
+            'link[data-sp-customer-management="1"]'
+        );
+
+        if (!link) {
+            link = document.querySelector(
+                'link[href*="customer-management.css"]'
+            );
         }
 
-        const link = document.createElement("link");
+        if (!link) {
+            link = document.createElement("link");
+            link.rel = "stylesheet";
+            document.head.appendChild(link);
+        }
 
         link.rel = "stylesheet";
         link.href = href;
         link.dataset.spCustomerManagement = "1";
-
-        document.head.appendChild(link);
     }
 
     function start() {
         ensureStylesheet();
         ensureModal();
+        bindGlobalCustomerActions();
         observeCustomerRows();
     }
 
