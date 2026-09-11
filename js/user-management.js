@@ -108,7 +108,10 @@
                     <label>Full Name</label><input id="umFullName" type="text" maxlength="150" required>
                     <label>Username</label><input id="umUsername" type="text" maxlength="100" required>
                     <label>Password <small id="umPasswordHint">Required for new user</small></label>
-                    <input id="umPassword" type="password" minlength="8" autocomplete="new-password">
+                    <div class="um-password-field">
+                        <input id="umPassword" type="password" minlength="8" autocomplete="new-password">
+                        <button id="umPasswordToggle" class="um-password-toggle" type="button" aria-label="Show password">Show</button>
+                    </div>
                     <label>Role</label>
                     <select id="umRole"><option value="User">User</option><option value="Admin">Admin</option><option value="Super Admin">Super Admin</option></select>
                     <label>Status</label>
@@ -130,6 +133,16 @@
 
         $("addUserBtn").addEventListener("click", () => openUserModal());
         $("umRefresh").addEventListener("click", loadUsers);
+        $("umPasswordToggle").addEventListener("click", () => {
+            const input = $("umPassword");
+            const visible = input.type === "text";
+            input.type = visible ? "password" : "text";
+            $("umPasswordToggle").textContent = visible ? "Show" : "Hide";
+            $("umPasswordToggle").setAttribute(
+                "aria-label",
+                visible ? "Show password" : "Hide password"
+            );
+        });
         $("closeUserModal").addEventListener("click", closeUserModal);
         $("cancelUser").addEventListener("click", closeUserModal);
         modal.addEventListener("click", (e) => { if (e.target === modal) closeUserModal(); });
@@ -195,8 +208,11 @@
         $("umFullName").value = user?.full_name || "";
         $("umUsername").value = user?.username || "";
         $("umPassword").value = "";
+        $("umPassword").type = "password";
         $("umPassword").required = !user;
-        $("umPasswordHint").textContent = user ? "Leave blank to keep current password" : "Required for new user";
+        $("umPasswordHint").textContent = user ? "Enter a new password or leave blank to keep current password" : "Required for new user";
+        $("umPasswordToggle").textContent = "Show";
+        $("umPasswordToggle").setAttribute("aria-label", "Show password");
         $("umRole").value = user?.role || "User";
         $("umStatus").value = user?.status || "Active";
         setPermissionInputs(user?.permissions || {dashboard:false, customer:false, invoice:false, user_management:false});
