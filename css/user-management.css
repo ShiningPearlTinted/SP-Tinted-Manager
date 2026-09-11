@@ -430,3 +430,99 @@
         padding: 22px;
     }
 }
+
+/* ======================================================
+   V7 UI FIXES
+   ====================================================== */
+
+/* Make the Change Password SVG match the other sidebar icons. */
+.sidebar .nav#navChangePassword .nav-icon {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+    display: block;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.sidebar .nav#navChangePassword .nav-icon circle {
+    fill: none !important;
+}
+
+/* Recent Customers control: keep Show, number and Customers on one clean line. */
+.recent .recent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.recent-limit-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+    white-space: nowrap;
+}
+
+.recent-limit-control label,
+.recent-limit-control span {
+    margin: 0;
+    font-size: 12px;
+    color: #91a4bf;
+}
+
+.recent-limit-control select {
+    min-width: 58px;
+    height: 32px;
+    padding: 0 26px 0 10px;
+    border: 1px solid #3b4759;
+    border-radius: 7px;
+    background: #151b24;
+    color: #f4f7fb;
+    font-size: 12px;
+    font-weight: 700;
+    outline: none;
+}
+
+.recent-limit-control select:focus {
+    border-color: #66758d;
+}
+
+/* Company Details save button. */
+#companySave {
+    min-width: 110px;
+    width: auto !important;
+    padding: 0 28px;
+    justify-content: center;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+/* Confirmation dialog is always above every other modal. */
+.um-confirm-overlay {
+    z-index: 99999;
+}
+
+.um-confirm-modal {
+    max-width: 430px;
+}
+
+.um-confirm-actions button {
+    min-height: 44px;
+}
+
+@media (max-width: 700px) {
+    .recent .recent-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .recent-limit-control {
+        justify-content: flex-start;
+    }
+}
+
