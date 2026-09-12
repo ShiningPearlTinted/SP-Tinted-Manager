@@ -1016,46 +1016,52 @@ td {
     }
 }
 
-/* Customer View - Copy buttons only */
+/* =====================================================
+   CUSTOMER VIEW - COPY BUTTONS
+   ONLY: Customer Name, Phone and Car Plate
+   ===================================================== */
 .customer-view-name-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    width: fit-content;
+    width: max-content;
     max-width: 100%;
     margin: 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: nowrap;
 }
 
 .customer-view-name-row h3 {
     margin: 0;
-    min-width: 0;
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .copy-btn {
-    flex: 0 0 32px;
-    width: 32px;
-    min-width: 32px;
-    height: 32px;
-    min-height: 32px;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    border: 1px solid #364052;
-    border-radius: 8px;
-    background: #171d27;
-    color: #91a4bf;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    flex: 0 0 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid #364052 !important;
+    border-radius: 8px !important;
+    background: #171d27 !important;
+    color: #91a4bf !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 0 !important;
     cursor: pointer;
-    transition: border-color .18s ease, background .18s ease, color .18s ease, transform .12s ease;
+    box-sizing: border-box;
+    transition: background .18s ease, border-color .18s ease, color .18s ease, transform .12s ease;
 }
 
 .copy-btn:hover {
-    border-color: #596a82;
-    background: #222a36;
-    color: #fff;
+    border-color: #596a82 !important;
+    background: #222a36 !important;
+    color: #ffffff !important;
 }
 
 .copy-btn:active {
@@ -1063,33 +1069,29 @@ td {
 }
 
 .copy-btn.copied {
-    border-color: #3b9b66;
-    background: #17271f;
-    color: #54d98a;
+    border-color: #3b9b66 !important;
+    background: #17271f !important;
+    color: #54d98a !important;
 }
 
 .copy-btn svg {
-    width: 16px;
-    height: 16px;
-    display: block;
+    width: 16px !important;
+    height: 16px !important;
+    display: block !important;
     fill: none !important;
     stroke: currentColor !important;
-    stroke-width: 1.8;
+    stroke-width: 1.8 !important;
     stroke-linecap: round;
     stroke-linejoin: round;
-}
-
-.copy-btn svg rect {
-    fill: none !important;
-    stroke: currentColor !important;
+    pointer-events: none;
 }
 
 .customer-view-value-row {
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    width: 100%;
 }
 
 .customer-view-value-row b {
@@ -1097,10 +1099,23 @@ td {
     min-width: 0;
     margin: 0;
     overflow-wrap: anywhere;
-    text-align: left;
 }
 
-.customer-view-value-row .copy-field-btn {
-    flex: 0 0 32px;
-    margin-left: auto;
+@media (max-width: 620px) {
+    .customer-view-name-row {
+        gap: 8px;
+    }
+
+    .copy-btn {
+        flex-basis: 30px !important;
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        min-height: 30px !important;
+    }
+
+    .copy-btn svg {
+        width: 15px !important;
+        height: 15px !important;
+    }
 }
