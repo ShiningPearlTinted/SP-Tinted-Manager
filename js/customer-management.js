@@ -508,7 +508,7 @@
 
     function ensureStylesheet() {
         const href =
-            "css/customer-management.css?v=20260912-customer-edit-delete-v9";
+            "css/customer-management.css?v=20260912-customer-edit-delete-v8";
 
         if (
             document.querySelector(
@@ -527,35 +527,98 @@
         document.head.appendChild(link);
     }
 
+    /* ======================================================
+       CUSTOMER VIEW - COPY DUPLICATE LOCK FIX
+       ------------------------------------------------------
+       Keep exactly ONE existing Copy button for:
+       - Customer Name
+       - Phone
+       - Car Plate
 
-    function removeCustomerViewWhitePlaceholders() {
-        const styleId = "sp-customer-view-white-placeholder-fix";
+       This removes only duplicate/stale copy controls that may
+       have been injected by an older cached add-on. It does not
+       change Customer View data, layout, Edit, Delete, Dashboard,
+       User Management, Settings, or any API function.
+       ====================================================== */
 
-        if (document.getElementById(styleId)) {
+    function dedupeCustomerViewCopyButtons() {
+        const modal = $("customerViewModal");
+
+        if (!modal) {
             return;
         }
 
-        const style = document.createElement("style");
+        const nameRow = modal.querySelector(".customer-view-name-row");
 
-        style.id = styleId;
-        style.textContent = `
-            .customer-view-modal button:empty {
-                display: none !important;
-            }
+        if (nameRow) {
+            const copyButtons = Array.from(
+                nameRow.querySelectorAll(".copy-btn")
+            );
 
-            .customer-view-modal span:empty {
-                display: none !important;
-            }
-        `;
+            copyButtons.slice(1).forEach((button) => button.remove());
 
-        document.head.appendChild(style);
+            nameRow.querySelectorAll(".customer-copy-btn").forEach((button) => {
+                button.remove();
+            });
+        }
+
+        const details = $("customerViewDetails");
+
+        if (!details) {
+            return;
+        }
+
+        details.querySelectorAll(".customer-view-value-row").forEach((row) => {
+            const copyButtons = Array.from(
+                row.querySelectorAll(".copy-btn")
+            );
+
+            copyButtons.slice(1).forEach((button) => button.remove());
+
+            row.querySelectorAll(".customer-copy-btn").forEach((button) => {
+                button.remove();
+            });
+        });
+
+        details.querySelectorAll(".customer-copy-value-row").forEach((row) => {
+            row.querySelectorAll(".customer-copy-btn").forEach((button) => {
+                button.remove();
+            });
+        });
+    }
+
+    function observeCustomerViewCopyDuplicates() {
+        const modal = $("customerViewModal");
+
+        if (!modal) {
+            return false;
+        }
+
+        dedupeCustomerViewCopyButtons();
+
+        if (modal.dataset.customerCopyDedupeObserver === "1") {
+            return true;
+        }
+
+        modal.dataset.customerCopyDedupeObserver = "1";
+
+        const observer = new MutationObserver(() => {
+            dedupeCustomerViewCopyButtons();
+        });
+
+        observer.observe(modal, {
+            childList: true,
+            subtree: true
+        });
+
+        return true;
     }
 
     function start() {
         ensureStylesheet();
         ensureModal();
         waitForCustomerRows();
-        removeCustomerViewWhitePlaceholders();
+        observeCustomerViewCopyDuplicates();
     }
 
     if (document.readyState === "loading") {
