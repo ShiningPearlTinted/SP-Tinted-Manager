@@ -508,7 +508,7 @@
 
     function ensureStylesheet() {
         const href =
-            "css/customer-management.css?v=20260912-customer-edit-delete-v8";
+            "css/customer-management.css?v=20260912-customer-edit-delete-v9";
 
         if (
             document.querySelector(
@@ -528,11 +528,34 @@
     }
 
 
+    function removeCustomerViewWhitePlaceholders() {
+        const styleId = "sp-customer-view-white-placeholder-fix";
+
+        if (document.getElementById(styleId)) {
+            return;
+        }
+
+        const style = document.createElement("style");
+
+        style.id = styleId;
+        style.textContent = `
+            .customer-view-modal button:empty {
+                display: none !important;
+            }
+
+            .customer-view-modal span:empty {
+                display: none !important;
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
     function start() {
         ensureStylesheet();
         ensureModal();
         waitForCustomerRows();
-        observeCustomerViewForCopy();
+        removeCustomerViewWhitePlaceholders();
     }
 
     if (document.readyState === "loading") {
