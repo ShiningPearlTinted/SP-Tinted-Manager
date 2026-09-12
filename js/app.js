@@ -570,49 +570,62 @@
         document.body.classList.remove("modal-open");
     }
 
-    $("copyCustomerName")?.addEventListener("click", async (event) => {
-        const button = event.currentTarget;
-        const value = $("viewCustomerName")?.textContent?.trim() || "";
+    async function copyCustomerText(value, button) {
+        const text = String(value || "").trim();
 
-        if (!value) {
+        if (!text) {
             return;
         }
 
         try {
-            await navigator.clipboard.writeText(value);
-            button.classList.add("copied");
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                const textarea = document.createElement("textarea");
 
-            setTimeout(() => {
-                button.classList.remove("copied");
-            }, 900);
+                textarea.value = text;
+                textarea.setAttribute("readonly", "");
+                textarea.style.position = "fixed";
+                textarea.style.left = "-9999px";
+                textarea.style.top = "0";
+                textarea.style.opacity = "0";
+
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                textarea.remove();
+            }
+
+            if (button) {
+                button.classList.add("copied");
+
+                window.setTimeout(() => {
+                    button.classList.remove("copied");
+                }, 900);
+            }
         } catch (error) {
-            console.error("Unable to copy customer name.", error);
+            console.error("Unable to copy customer text.", error);
         }
+    }
+
+    $("copyCustomerName")?.addEventListener("click", (event) => {
+        const button = event.currentTarget;
+        const value = $("viewCustomerName")?.textContent?.trim() || "";
+
+        copyCustomerText(value, button);
     });
 
-    $("customerViewDetails")?.addEventListener("click", async (event) => {
+    $("customerViewDetails")?.addEventListener("click", (event) => {
         const button = event.target.closest(".copy-field-btn");
 
         if (!button) {
             return;
         }
 
-        const value = button.dataset.copyValue || "";
+        event.preventDefault();
+        event.stopPropagation();
 
-        if (!value) {
-            return;
-        }
-
-        try {
-            await navigator.clipboard.writeText(value);
-            button.classList.add("copied");
-
-            setTimeout(() => {
-                button.classList.remove("copied");
-            }, 900);
-        } catch (error) {
-            console.error("Unable to copy customer field.", error);
-        }
+        copyCustomerText(button.dataset.copyValue || "", button);
     });
 
     $("closeCustomerView")?.addEventListener("click", closeCustomerView);
