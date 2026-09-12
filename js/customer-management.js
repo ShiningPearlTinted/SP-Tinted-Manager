@@ -398,7 +398,7 @@
             if (!actionCell.querySelector(".customer-edit-btn")) {
                 const editButton = document.createElement("button");
 
-                editButton.className = "view-btn customer-edit-btn";
+                editButton.className = "customer-edit-btn";
                 editButton.type = "button";
                 editButton.dataset.customerId = id;
                 editButton.textContent = "Edit";
@@ -409,7 +409,7 @@
             if (!actionCell.querySelector(".customer-delete-btn")) {
                 const deleteButton = document.createElement("button");
 
-                deleteButton.className = "view-btn customer-delete-btn";
+                deleteButton.className = "customer-delete-btn";
                 deleteButton.type = "button";
                 deleteButton.dataset.customerId = id;
                 deleteButton.textContent = "Delete";
@@ -420,46 +420,57 @@
     }
 
     function bindCustomerActionDelegation() {
-        const tableBody = $("customerRows");
-
-        if (!tableBody || tableBody.dataset.actionDelegation === "1") {
+        if (document.documentElement.dataset.customerActionsBound === "1") {
             return;
         }
 
-        tableBody.dataset.actionDelegation = "1";
+        document.documentElement.dataset.customerActionsBound = "1";
 
-        tableBody.addEventListener("click", (event) => {
-            const editButton =
-                event.target.closest(".customer-edit-btn");
+        document.addEventListener(
+            "click",
+            (event) => {
+                const editButton = event.target.closest(
+                    ".customer-edit-btn"
+                );
 
-            if (editButton) {
+                if (editButton) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+
+                    openEditCustomer(
+                        editButton.dataset.customerId
+                    );
+
+                    return;
+                }
+
+                const deleteButton = event.target.closest(
+                    ".customer-delete-btn"
+                );
+
+                if (!deleteButton) {
+                    return;
+                }
+
                 event.preventDefault();
                 event.stopPropagation();
-
-                openEditCustomer(editButton.dataset.customerId);
-                return;
-            }
-
-            const deleteButton =
-                event.target.closest(".customer-delete-btn");
-
-            if (deleteButton) {
-                event.preventDefault();
-                event.stopPropagation();
+                event.stopImmediatePropagation();
 
                 const row = deleteButton.closest("tr");
                 const code =
-                    row?.children[0]?.textContent.trim() || "Customer";
+                    row?.children[0]?.textContent?.trim() || "Customer";
                 const name =
-                    row?.children[1]?.textContent.trim() || "Customer";
+                    row?.children[1]?.textContent?.trim() || "Customer";
 
                 deleteCustomer(
                     deleteButton.dataset.customerId,
                     code,
                     name
                 );
-            }
-        });
+            },
+            true
+        );
     }
 
     function observeCustomerRows() {
@@ -508,7 +519,7 @@
 
     function ensureStylesheet() {
         const href =
-            "css/customer-management.css?v=20260912-customer-edit-delete-v8";
+            "css/customer-management.css?v=20260912-customer-edit-delete-v9-lock";
 
         if (
             document.querySelector(
@@ -527,6 +538,218 @@
         document.head.appendChild(link);
     }
 
+
+    function ensureCustomerEditDeleteStyles() {
+        if (document.getElementById("spCustomerEditDeleteInlineStyles")) {
+            return;
+        }
+
+        const style = document.createElement("style");
+        style.id = "spCustomerEditDeleteInlineStyles";
+        style.textContent = `
+            .customer-edit-modal {
+                width: min(760px, calc(100vw - 32px));
+                max-height: calc(100vh - 32px);
+                overflow-y: auto;
+                padding: 26px;
+                border: 1px solid #344154;
+                border-radius: 18px;
+                background: #1b2430;
+                color: #f8fafc;
+                box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+                box-sizing: border-box;
+            }
+
+            .customer-edit-modal h3 {
+                margin: 0 0 6px;
+                font-size: 22px;
+                font-weight: 800;
+            }
+
+            .customer-edit-modal > p {
+                margin: 0 0 22px;
+                color: #91a4bf;
+                font-size: 13px;
+            }
+
+            .customer-edit-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 15px;
+            }
+
+            .customer-edit-field {
+                display: flex;
+                flex-direction: column;
+                gap: 7px;
+                min-width: 0;
+            }
+
+            .customer-edit-field label {
+                color: #dce3ed;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .customer-edit-field input {
+                width: 100%;
+                height: 42px;
+                padding: 0 12px;
+                border: 1px solid #334155;
+                border-radius: 9px;
+                background: #151b25;
+                color: #f8fafc;
+                font: inherit;
+                font-size: 14px;
+                outline: none;
+                box-sizing: border-box;
+            }
+
+            .customer-edit-field input:focus {
+                border-color: #64748b;
+                box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.15);
+            }
+
+            .customer-edit-field input[readonly] {
+                color: #9aa9bc;
+                opacity: 0.85;
+                cursor: not-allowed;
+            }
+
+            .customer-edit-full {
+                grid-column: 1 / -1;
+            }
+
+            .customer-edit-modal .modal-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+                margin-top: 22px;
+            }
+
+            .customer-edit-modal .modal-actions button {
+                min-width: 120px;
+                height: 42px;
+                border-radius: 9px;
+                font-weight: 800;
+                cursor: pointer;
+            }
+
+            .customer-confirm-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 10050;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                background: rgba(4, 7, 12, 0.78);
+                backdrop-filter: blur(5px);
+            }
+
+            .customer-confirm-box {
+                position: relative;
+                width: min(420px, calc(100vw - 40px));
+                padding: 28px;
+                border: 1px solid #344154;
+                border-radius: 16px;
+                background: #1b2430;
+                color: #f8fafc;
+                text-align: center;
+                box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+                box-sizing: border-box;
+            }
+
+            .customer-confirm-close {
+                position: absolute;
+                top: 10px;
+                right: 12px;
+                width: 32px;
+                height: 32px;
+                border: 0;
+                background: transparent;
+                color: #91a4bf;
+                font-size: 22px;
+                cursor: pointer;
+            }
+
+            .customer-confirm-icon {
+                width: 46px;
+                height: 46px;
+                margin: 0 auto 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: rgba(225, 29, 46, 0.14);
+                color: #ef3346;
+                font-size: 22px;
+                font-weight: 800;
+            }
+
+            .customer-confirm-box h3 {
+                margin: 0 0 8px;
+            }
+
+            .customer-confirm-box p {
+                margin: 0;
+                color: #91a4bf;
+                line-height: 1.5;
+            }
+
+            .customer-confirm-actions {
+                display: flex;
+                gap: 10px;
+                margin-top: 24px;
+            }
+
+            .customer-confirm-actions button {
+                flex: 1;
+                height: 42px;
+                border-radius: 9px;
+                font-weight: 800;
+                cursor: pointer;
+            }
+
+            .customer-confirm-no {
+                border: 1px solid #3b4759;
+                background: #232d3b;
+                color: #f4f7fb;
+            }
+
+            .customer-confirm-yes {
+                border: 1px solid #e11d2e;
+                background: #e30620;
+                color: #ffffff;
+            }
+
+            @media (max-width: 620px) {
+                .customer-edit-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .customer-edit-full {
+                    grid-column: auto;
+                }
+
+                .customer-edit-modal {
+                    width: min(520px, calc(100vw - 24px));
+                    padding: 20px;
+                }
+
+                .customer-edit-modal .modal-actions {
+                    justify-content: stretch;
+                }
+
+                .customer-edit-modal .modal-actions button {
+                    flex: 1;
+                    min-width: 0;
+                }
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
 
     /* =====================================================
        CUSTOMER VIEW - COPY BUTTONS ADD-ON ONLY
@@ -758,6 +981,7 @@
     }
 
     function start() {
+        ensureCustomerEditDeleteStyles();
         ensureStylesheet();
         ensureModal();
         waitForCustomerRows();
