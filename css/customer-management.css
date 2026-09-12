@@ -308,3 +308,76 @@
         height: 30px !important;
     }
 }
+
+/* =========================================================
+   CUSTOMER LIST - ACTION BUTTONS ONLY
+   ---------------------------------------------------------
+   View remains controlled by the existing .view-btn style.
+   These rules only make Edit/Delete match the same UI.
+   ========================================================= */
+
+.customer-table .customer-edit-btn,
+.customer-table .customer-delete-btn {
+    appearance: none;
+    -webkit-appearance: none;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle;
+    width: auto;
+    min-width: 62px;
+    height: 34px !important;
+    margin: 0 0 0 6px !important;
+    padding: 0 12px !important;
+    box-sizing: border-box;
+    border-radius: 8px !important;
+    font-family: inherit;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    cursor: pointer;
+    transition: background .18s ease, border-color .18s ease, transform .12s ease;
+}
+
+.customer-table .customer-edit-btn {
+    border: 1px solid #46546a !important;
+    background: #252e3c !important;
+    color: #ffffff !important;
+}
+
+.customer-table .customer-edit-btn:hover {
+    border-color: #5b6b82 !important;
+    background: #313d4f !important;
+    color: #ffffff !important;
+}
+
+.customer-table .customer-delete-btn {
+    border: 1px solid #6b3440 !important;
+    background: #3a2028 !important;
+    color: #ffb4bd !important;
+}
+
+.customer-table .customer-delete-btn:hover {
+    border-color: #e11d2e !important;
+    background: #5a202b !important;
+    color: #ffffff !important;
+}
+
+.customer-table .customer-edit-btn:active,
+.customer-table .customer-delete-btn:active {
+    transform: translateY(1px);
+}
+
+.customer-table td:last-child {
+    white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+    .customer-table .customer-edit-btn,
+    .customer-table .customer-delete-btn {
+        min-width: 60px;
+        height: 34px !important;
+        padding: 0 10px !important;
+        margin-left: 5px !important;
+    }
+}
