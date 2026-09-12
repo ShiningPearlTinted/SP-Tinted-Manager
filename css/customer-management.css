@@ -381,3 +381,23 @@
         margin-left: 5px !important;
     }
 }
+
+/* =========================================================
+   CUSTOMER VIEW - REMOVE UNSTYLED DUPLICATE BUTTONS ONLY
+   ---------------------------------------------------------
+   Keep the existing styled Copy buttons.
+   Hide only accidental/un-styled buttons inside Customer View.
+   No customer data or other functions are changed.
+   ========================================================= */
+
+.customer-view-modal .customer-view-name-row > button:not(.copy-btn) {
+    display: none !important;
+}
+
+.customer-view-modal .customer-view-details .customer-view-value-row > button:not(.copy-btn) {
+    display: none !important;
+}
+
+.customer-view-modal .customer-view-details .customer-copy-value-row > button:not(.customer-copy-btn):not(.copy-btn) {
+    display: none !important;
+}
