@@ -574,26 +574,24 @@
         const text = String(value || "").trim();
 
         if (!text) {
-            return;
+            return false;
         }
 
         try {
             if (navigator.clipboard && window.isSecureContext) {
                 await navigator.clipboard.writeText(text);
             } else {
-                const textarea = document.createElement("textarea");
-
-                textarea.value = text;
-                textarea.setAttribute("readonly", "");
-                textarea.style.position = "fixed";
-                textarea.style.left = "-9999px";
-                textarea.style.top = "0";
-                textarea.style.opacity = "0";
-
-                document.body.appendChild(textarea);
-                textarea.select();
+                const helper = document.createElement("textarea");
+                helper.value = text;
+                helper.setAttribute("readonly", "");
+                helper.style.position = "fixed";
+                helper.style.opacity = "0";
+                helper.style.pointerEvents = "none";
+                document.body.appendChild(helper);
+                helper.select();
+                helper.setSelectionRange(0, helper.value.length);
                 document.execCommand("copy");
-                textarea.remove();
+                helper.remove();
             }
 
             if (button) {
@@ -603,19 +601,22 @@
                     button.classList.remove("copied");
                 }, 900);
             }
+
+            return true;
         } catch (error) {
             console.error("Unable to copy customer text.", error);
+            return false;
         }
     }
 
-    $("copyCustomerName")?.addEventListener("click", (event) => {
+    $("copyCustomerName")?.addEventListener("click", async (event) => {
         const button = event.currentTarget;
-        const value = $("viewCustomerName")?.textContent?.trim() || "";
+        const value = $("viewCustomerName")?.textContent || "";
 
-        copyCustomerText(value, button);
+        await copyCustomerText(value, button);
     });
 
-    $("customerViewDetails")?.addEventListener("click", (event) => {
+    $("customerViewDetails")?.addEventListener("click", async (event) => {
         const button = event.target.closest(".copy-field-btn");
 
         if (!button) {
@@ -625,7 +626,7 @@
         event.preventDefault();
         event.stopPropagation();
 
-        copyCustomerText(button.dataset.copyValue || "", button);
+        await copyCustomerText(button.dataset.copyValue || "", button);
     });
 
     $("closeCustomerView")?.addEventListener("click", closeCustomerView);
