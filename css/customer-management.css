@@ -401,3 +401,24 @@
 .customer-view-modal .customer-view-details .customer-copy-value-row > button:not(.customer-copy-btn):not(.copy-btn) {
     display: none !important;
 }
+
+/* =========================================================
+   MASTER LOCK - REMOVE DUPLICATE CUSTOMER VIEW COPY BUTTONS
+   Only one Copy button is allowed for each requested field.
+   ========================================================= */
+
+.customer-view-modal .customer-view-name-row .copy-btn ~ .copy-btn {
+    display: none !important;
+}
+
+.customer-view-modal .customer-view-value-row .copy-btn ~ .copy-btn {
+    display: none !important;
+}
+
+.customer-view-modal .customer-view-details > div > button:not(.copy-btn) {
+    display: none !important;
+}
+
+.customer-view-modal .customer-view-details .customer-view-value-row > button:not(.copy-btn) {
+    display: none !important;
+}
