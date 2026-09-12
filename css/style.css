@@ -1018,22 +1018,29 @@ td {
 
 /* Customer View - Copy buttons only */
 .customer-view-name-row {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: 9px;
+    width: fit-content;
+    max-width: 100%;
     margin: 0 auto;
 }
 
 .customer-view-name-row h3 {
     margin: 0;
+    min-width: 0;
 }
 
 .copy-btn {
-    flex: 0 0 30px;
-    width: 30px;
-    height: 30px;
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    margin: 0;
     padding: 0;
+    box-sizing: border-box;
     border: 1px solid #364052;
     border-radius: 8px;
     background: #171d27;
@@ -1042,7 +1049,7 @@ td {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: .18s ease;
+    transition: border-color .18s ease, background .18s ease, color .18s ease, transform .12s ease;
 }
 
 .copy-btn:hover {
@@ -1062,14 +1069,19 @@ td {
 }
 
 .copy-btn svg {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
     display: block;
-    fill: none;
-    stroke: currentColor;
+    fill: none !important;
+    stroke: currentColor !important;
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
+}
+
+.copy-btn svg rect {
+    fill: none !important;
+    stroke: currentColor !important;
 }
 
 .customer-view-value-row {
@@ -1077,11 +1089,18 @@ td {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+    width: 100%;
 }
 
 .customer-view-value-row b {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
     margin: 0;
     overflow-wrap: anywhere;
+    text-align: left;
+}
+
+.customer-view-value-row .copy-field-btn {
+    flex: 0 0 32px;
+    margin-left: auto;
 }
